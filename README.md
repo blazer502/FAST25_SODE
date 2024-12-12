@@ -134,7 +134,7 @@ cd benchmark/
 ./build_and_install_ycsb.sh
 ```
 
-Lastly, you can check the installation of BPF-KV and WiredTiger with:
+Lastly, you can check the functionality of HRP on BPF-KV and WiredTiger:
 ```
 cd eval/test/
 ./test_bpfkv.sh
