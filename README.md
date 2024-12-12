@@ -134,6 +134,13 @@ cd benchmark/
 ./build_and_install_ycsb.sh
 ```
 
+Lastly, you can check the installation of BPF-KV and WiredTiger with:
+```
+cd eval/test/
+./test_bpfkv.sh
+./test_wiredtiger.sh
+```
+
 #### Run All Benchmarks
 Run the script with the emulator device name (e.g. /dev/nvme0n1):
 ```
