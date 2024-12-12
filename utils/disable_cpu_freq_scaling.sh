@@ -17,6 +17,7 @@ popd () {
     command popd "$@" > /dev/null
 }
 
+
 pushd /sys/devices/system/cpu
 for CORE in cpu[0-9]*; do
     pushd $CORE
@@ -37,32 +38,33 @@ for CORE in cpu[0-9]*; do
         echo 0 > online
     fi
 
+    
     pushd cpufreq
+    LOW_CPU_FREQ=`cat cpuinfo_min_freq`
     if [ "${CORE}" == "cpu17" ]; then
         echo "$CORE userspace"
         sudo bash -c "echo \"userspace\" > scaling_governor"
-        sudo bash -c "echo 1200000 > scaling_setspeed"
-        sudo bash -c "echo 1200000 > scaling_max_freq"
-        sudo bash -c "echo 1200000 > scaling_min_freq"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_setspeed"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_max_freq"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_min_freq"
     elif [ "${CORE}" == "cpu18" ]; then
         echo "$CORE userspace"
         sudo bash -c "echo \"userspace\" > scaling_governor"
-        sudo bash -c "echo 1200000 > scaling_setspeed"
-        sudo bash -c "echo 1200000 > scaling_max_freq"
-        sudo bash -c "echo 1200000 > scaling_min_freq"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_setspeed"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_max_freq"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_min_freq"
     elif [ "${CORE}" == "cpu19" ]; then
         echo "$CORE userspace"
         sudo bash -c "echo \"userspace\" > scaling_governor"
-        sudo bash -c "echo 1200000 > scaling_setspeed"
-        sudo bash -c "echo 1200000 > scaling_max_freq"
-        sudo bash -c "echo 1200000 > scaling_min_freq"
-
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_setspeed"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_max_freq"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_min_freq"
     elif [ "${CORE}" == "cpu20" ]; then
         echo "$CORE userspace"
         sudo bash -c "echo \"userspace\" > scaling_governor"
-        sudo bash -c "echo 1200000 > scaling_setspeed"
-        sudo bash -c "echo 1200000 > scaling_max_freq"
-        sudo bash -c "echo 1200000 > scaling_min_freq"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_setspeed"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_max_freq"
+        sudo bash -c "echo $LOW_CPU_FREQ > scaling_min_freq"
     else
         echo "$CORE performance"
         sudo bash -c "echo \"performance\" > scaling_governor"
