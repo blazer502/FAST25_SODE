@@ -1,0 +1,36 @@
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/AsyncCallback.java:42: warning: return type of member com.wiredtiger.db.AsyncCallback.notify is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:42: warning: Member format (variable) of class com::wiredtiger::db::PackFormatInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:43: warning: Member isRaw (variable) of class com::wiredtiger::db::PackFormatInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:44: warning: Member formatOff (variable) of class com::wiredtiger::db::PackFormatInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:45: warning: Member formatRepeatCount (variable) of class com::wiredtiger::db::PackFormatInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:52: warning: The following parameters of com.wiredtiger.db.PackFormatInputStream.PackFormatInputStream(String format, boolean isRaw) are not documented:
+  parameter 'isRaw'
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:71: warning: return type of member com.wiredtiger.db.PackFormatInputStream.available is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:181: warning: return type of member com.wiredtiger.db.PackFormatInputStream.getLengthFromFormat is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:87: warning: return type of member com.wiredtiger.db.PackFormatInputStream.getType is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:193: warning: return type of member com.wiredtiger.db.PackFormatInputStream.hasLength is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackFormatInputStream.java:62: warning: return type of member com.wiredtiger.db.PackFormatInputStream.toString is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:42: warning: Member format (variable) of class com::wiredtiger::db::PackInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:43: warning: Member value (variable) of class com::wiredtiger::db::PackInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:44: warning: Member valueOff (variable) of class com::wiredtiger::db::PackInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:45: warning: Member valueLen (variable) of class com::wiredtiger::db::PackInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:46: warning: Member isRaw (variable) of class com::wiredtiger::db::PackInputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:107: warning: return type of member com.wiredtiger.db.PackInputStream.getByte is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:146: warning: return type of member com.wiredtiger.db.PackInputStream.getByteArray is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:93: warning: return type of member com.wiredtiger.db.PackInputStream.getFormat is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:203: warning: return type of member com.wiredtiger.db.PackInputStream.getInt is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:218: warning: return type of member com.wiredtiger.db.PackInputStream.getLong is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:232: warning: return type of member com.wiredtiger.db.PackInputStream.getRecord is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:242: warning: return type of member com.wiredtiger.db.PackInputStream.getShort is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:256: warning: return type of member com.wiredtiger.db.PackInputStream.getString is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackInputStream.java:100: warning: return type of member com.wiredtiger.db.PackInputStream.getValue is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackOutputStream.java:42: warning: Member format (variable) of class com::wiredtiger::db::PackOutputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackOutputStream.java:43: warning: Member packed (variable) of class com::wiredtiger::db::PackOutputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackOutputStream.java:44: warning: Member intBuf (variable) of class com::wiredtiger::db::PackOutputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackOutputStream.java:45: warning: Member isRaw (variable) of class com::wiredtiger::db::PackOutputStream is not documented.
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackOutputStream.java:74: warning: return type of member com.wiredtiger.db.PackOutputStream.getFormat is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/PackOutputStream.java:81: warning: return type of member com.wiredtiger.db.PackOutputStream.getValue is not documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/WiredTigerException.java:37: warning: parameters of member com.wiredtiger.db.WiredTigerException.WiredTigerException are not (all) documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/WiredTigerPackingException.java:38: warning: parameters of member com.wiredtiger.db.WiredTigerPackingException.WiredTigerPackingException are not (all) documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/WiredTigerPanicException.java:39: warning: parameters of member com.wiredtiger.db.WiredTigerPanicException.WiredTigerPanicException are not (all) documented
+/home/chanyoung/XRP/wiredtiger/lang/java/src/com/wiredtiger/db/WiredTigerRollbackException.java:38: warning: parameters of member com.wiredtiger.db.WiredTigerRollbackException.WiredTigerRollbackException are not (all) documented
