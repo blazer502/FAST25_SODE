@@ -31,7 +31,7 @@ Tested SODE hardware configuration (or [see SODE paper, 5 Evaluation](etc/fast25
 | Memory        |   Samsung DDR4 M393A4K40BB2-CTD 32GB | 192GB (32GBx6) + 192GB (32GBx6) |
 
 ### Instructions
-### Software Dependency
+#### Software Dependency
 First, clone this repository in a folder that have large disk space to compile Linux kernel:
 ```
 git clone https://github.com/blazer502/FAST25_SODE.git
