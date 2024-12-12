@@ -65,7 +65,7 @@ uname -r
 
 #### Build and Setup Computational Storage Device Emulator
 
-First, modify the following option to reserve physical memory to bind specific memory to the node used for emulation. This configuration assume 192GB memory from the offset 192GB is reserved. You can modify the setup:
+First, modify the following option to reserve physical memory to bind specific memory to the node used for emulation. This configuration assumes 192GB memory from the offset 192GB is reserved. You can modify the setup:
 ```
 # memmap=<memory size>\\<memory offset>
 GRUB_CMDLINE_LINUX="... memmap=192G\\192G intremap=off intel_iommu=off"
@@ -168,15 +168,15 @@ Here is a list of the key results in this paper:
 * Figure 7(b): Throughput of range query in BPF-KV
 * Figure 8(a): Throughput of BPF-KV using an open-loop load generator
 * Figure 8(b): Latency-throughput graph of BPF-KV with 12 threads
-
 * Figure 9: Throughput of WiredTiger for varying client threads
 * Figure 10: 99-th percentile latency of WiredTiger for varying client threads
 * Figure 11: Throughput speedup of WiredTiger for varying skewness
 * Figure 12: Normalized latency reduction of SODE
 * Figure 13: Normalized throughput of WiredTiger on YCSB-C
+* Appendix Figure 2: Throughput of WiredTiger for varying cache sizes
 
 #### Optional Comment
-We apologize for the inconvenience caused because the code name of our project at the time of development was `HRP`. In our implementation, the keyword is HRP, not SODE. For example, you can find `read_hrp` instead of `read_sode`.
+We apologize for the inconvenience caused by the code name of our project at the time of development being `HRP`. In our implementation, the keyword is HRP, not SODE. For example, you can find `read_hrp` instead of `read_sode`.
 
 ## Authors
 - Chanyoung Park (UNIST)    chanyoung@unist.ac.kr
