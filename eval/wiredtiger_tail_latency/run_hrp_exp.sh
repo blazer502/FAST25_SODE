@@ -33,7 +33,6 @@ if [ ! -e "$YCSB_PATH/build/init_wt" ]; then
     exit 1
 fi
 
-cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
 
 for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.yaml" "ycsb_f.yaml"; do
     CACHE_SIZE=512

@@ -62,7 +62,7 @@ fi
 
 # Compile kernel
 printf "Compiling kernel...\n"
-make deb-pkg -j48
+make deb-pkg -j`nproc`
 popd
 
 # Install kernel

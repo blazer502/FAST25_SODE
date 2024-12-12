@@ -81,7 +81,7 @@ pushd $YCSB_PATH/build
 YCSB_CONFIG_PATH="$YCSB_PATH/wiredtiger/config/$CONFIG"
 
 # Update configuration file
-git checkout $YCSB_CONFIG_PATH
+cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
 sed -i 's#data_dir: .*#data_dir: "'$DB_PATH'"#' $YCSB_CONFIG_PATH
 sed -i 's#nr_thread: .*#nr_thread: '$NUM_THREADS'#' $YCSB_CONFIG_PATH
 sed -i 's#cache_size=[0-9A-Za-z]*,#cache_size='$CACHE_SIZE',#' $YCSB_CONFIG_PATH
