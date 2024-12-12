@@ -65,7 +65,7 @@ uname -r
 
 #### Build and Setup Computational Storage Device Emulator
 
-First, modify the following option to reserve physical memory to bind specific memory to the node used for emulation. This configuration assumes 192GB memory from the offset 192GB is reserved. You can modify the setup:
+First, modify the following option to reserve physical memory to bind specific memory to the node used for emulation. This configuration assumes 192GB memory from the offset 192GB is reserved. And, your system must disable interrupt remapping (`intremap`) and intel I\O MMU service (`intel_iommu`). You can modify the setup:
 ```
 # memmap=<memory size>\\<memory offset>
 GRUB_CMDLINE_LINUX="... memmap=192G\\192G intremap=off intel_iommu=off"
