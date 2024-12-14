@@ -43,6 +43,8 @@ $UTILS_PATH/disable_cpu_freq_scaling.sh
 # Mount disk
 $UTILS_PATH/mount_disk.sh $DEV_NAME $MOUNT_POINT
 
+cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
+
 pushd $YCSB_PATH/build
 
 printf "Creating database folder...\n"

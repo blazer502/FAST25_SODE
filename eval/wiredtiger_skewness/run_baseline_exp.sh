@@ -125,12 +125,12 @@ for ZIPF in 0 0.6 0.7 0.8 0.9 0.99 1.1 1.2 1.3 1.4 1.5 1.6; do
     # Run with XRP
     export WT_BPF_PATH="$WT_PATH/bpf_prog/wt_bpf.o"
     printf "Evaluating WiredTiger with ZIPF=$ZIPF and XRP...\n"
-    sudo -E ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$ZIPF-zipf-xrp.txt
+    sudo -E numactl --membind=0 --cpunodebind=0 ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$ZIPF-zipf-xrp.txt
 
     # Run without XRP
     unset WT_BPF_PATH
     printf "Evaluating WiredTiger with ZIPF=$ZIPF and read()...\n"
-    sudo -E ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$ZIPF-zipf-read.txt
+    sudo -E numactl --membind=0 --cpunodebind=0 ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$ZIPF-zipf-read.txt
 done
 popd
 
