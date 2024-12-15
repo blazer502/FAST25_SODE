@@ -354,7 +354,7 @@ static struct nvmev_io_worker *__allocate_work_queue_entry(int sqid, unsigned in
 	struct nvmev_io_work *w = NULL;
 
 	e = worker->free_seq;
-    while (e == -1) {
+    if (e == -1) {
         __reclaim_completed_reqs_force();
         cond_resched();
 	    e = worker->free_seq;
@@ -1970,25 +1970,25 @@ static int nvmev_resubmit_worker(void *data)
             //printk("%1d JOB %d, %d\n", my_worker->id, curr, worker->id);
 
             if (on_meta->is_parallel && !is_parallel) {
-                ebpf_time = ktime_get_ns();
+                //ebpf_time = ktime_get_ns();
                 prev_pkru = read_pkru();
                 write_pkru((u32)(-1));
                 ret = resubmit_logic(w->sqid, w->sq_entry, w, existing_job_id);
-                ebpf_time_end = ktime_get_ns();
+                //ebpf_time_end = ktime_get_ns();
             }
             else if (on_meta->is_parallel && is_parallel) {
-                ebpf_time = ktime_get_ns();
+                //ebpf_time = ktime_get_ns();
                 ret = resubmit_logic(w->sqid, w->sq_entry, w, existing_job_id);
-                ebpf_time_end = ktime_get_ns();
+                //ebpf_time_end = ktime_get_ns();
             }
             else {
                 u32 prev_pkru;
-                ebpf_time = ktime_get_ns();
+                //ebpf_time = ktime_get_ns();
                 prev_pkru = read_pkru();
                 write_pkru((u32)(-1));
                 ret = resubmit_logic_single(w->sqid, w->sq_entry, w);
                 write_pkru(prev_pkru);
-                ebpf_time_end = ktime_get_ns();
+                //ebpf_time_end = ktime_get_ns();
             }
 
             // for parallel resubmission
@@ -2207,7 +2207,7 @@ static int nvmev_resubmit_worker(void *data)
                     ret = 1;
                 }
                     
-                worker->ebpf_time = ktime_get_ns() - ebpf_time;
+                //worker->ebpf_time = ktime_get_ns() - ebpf_time;
             }
             else if (on_meta->is_parallel) {
                 // Done
