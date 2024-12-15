@@ -40,10 +40,25 @@ $UTILS_PATH/disable_cpu_freq_scaling.sh
 # Create result folder
 mkdir -p $EVAL_PATH/result
 
-# Specialized BPF-KV for XRP-enabled io_uring with open-loop load generator
-pushd $BPFKV_IO_URING_OPEN_LOOP_PATH
 # Unmont disk (io_uring is measured with raw block device)
 $UTILS_PATH/unmount_disk.sh $DEV_NAME
+
+pushd $BPFKV_IO_URING_OPEN_LOOP_PATH_HRP
+# Load database
+printf "Creating a BPF-KV database file with $LAYER layers of index...\n"
+sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --load $LAYER
+for i in {1..12}; do
+    REQ_PER_SEC=$((60000 * i))
+    printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, $REQ_PER_SEC ops/s, and HRP...\n"
+    # Warmup first
+    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS))
+
+    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS)) | tee $EVAL_PATH/result/$REQ_PER_SEC-ops-hrp.txt
+done
+popd
+
+# Specialized BPF-KV for XRP-enabled io_uring with open-loop load generator
+pushd $BPFKV_IO_URING_OPEN_LOOP_PATH
 # Load database
 printf "Creating a BPF-KV database file with $LAYER layers of index...\n"
 sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --load $LAYER
@@ -57,15 +72,6 @@ for i in {1..12}; do
 done
 popd
 
-pushd $BPFKV_IO_URING_OPEN_LOOP_PATH_HRP
-for i in {1..12}; do
-    REQ_PER_SEC=$((60000 * i))
-    printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, $REQ_PER_SEC ops/s, and HRP...\n"
-    # Warmup first
-    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS))
 
-    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS)) | tee $EVAL_PATH/result/$REQ_PER_SEC-ops-hrp.txt
-done
-popd
 
 printf "Done. Results are stored in $EVAL_PATH/result\n"

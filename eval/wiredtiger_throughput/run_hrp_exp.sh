@@ -36,6 +36,12 @@ fi
 cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
 
 for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.yaml" "ycsb_f.yaml"; do
+    CACHE_SIZE=512
+    for NUM_THREADS in 1 2 3; do
+        # Evaluate WiredTiger with HRP
+        $EVAL_PATH/run_hrp_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME
+    done
+    
     NUM_THREADS=1
     for CACHE_SIZE in 512 1024 2048 4096; do
         # Evaluate WiredTiger with HRP
