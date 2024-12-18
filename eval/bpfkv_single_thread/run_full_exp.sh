@@ -24,8 +24,7 @@ if [ ! -z $1 ]; then
 fi
 printf "DEV_NAME=$DEV_NAME\n"
 
-#NUM_OPS=1000000
-NUM_OPS=10
+NUM_OPS=1000000
 NUM_THREADS=1
 printf "NUM_OPS=$NUM_OPS\n"
 printf "NUM_THREADS=$NUM_THREADS\n"

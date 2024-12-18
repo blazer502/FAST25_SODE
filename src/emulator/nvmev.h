@@ -252,10 +252,6 @@ struct nvmev_io_work {
 
     u64 slba;
 
-    u64 ebpf_time;
-    u64 logic_time;
-    u64 rest_time;
-
 	volatile unsigned int next, prev;
 };
 

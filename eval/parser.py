@@ -99,7 +99,7 @@ for thread in thread_list:
     data = []
     data.append(thread)
     for config in config_list:
-        data.append(perf_dict[(layer, thread, config, "throughput")])
+        data.append(perf_dict[(layer, thread, config, "throughput")] / 1000)
     output.append(data)
 
 with open(output_path + filename, mode='w', newline='') as f:
@@ -116,7 +116,7 @@ for thread in thread_list:
     data = []
     data.append(thread)
     for config in config_list:
-        data.append(perf_dict[(layer, thread, config, "throughput")])
+        data.append(perf_dict[(layer, thread, config, "throughput")] / 1000)
     output.append(data)
 
 with open(output_path + filename, mode='w', newline='') as f:
@@ -195,7 +195,7 @@ for layer in layer_list:
     data = []
     data.append(layer)
     for config in config_list:
-        data.append(perf_dict[(layer, thread, config, "throughput")])
+        data.append(perf_dict[(layer, thread, config, "throughput")] / 1000)
     output.append(data)
 
 with open(output_path + filename, mode='w', newline='') as f:
@@ -250,7 +250,7 @@ for range_len in range_len_list:
     data = []
     data.append(range_len)
     for config in config_list:
-        data.append(perf_dict[(range_len, config, "throughput")])
+        data.append(perf_dict[(range_len, config, "throughput")] / 1000)
     output.append(data)
 
 with open(output_path + filename, mode='w', newline='') as f:
@@ -279,7 +279,6 @@ for config in config_list:
         with open(f"bpfkv_thread_scaling/result/{thread}-threads-{config}.txt", "r") as fp:
             data = fp.read()
             perf_dict[(layer, thread, config, "throughput")] = float(re.search("Average throughput: (.*?) op/s", data).group(1))
-
             fp.close()
 
 filename = "fig8_a.csv"
@@ -289,7 +288,7 @@ for thread in thread_list:
     data = []
     data.append(thread)
     for config in config_list:
-        data.append(perf_dict[(layer, thread, config, "throughput")])
+        data.append(perf_dict[(layer, thread, config, "throughput")] / 1000)
     output.append(data)
 
 with open(output_path + filename, mode='w', newline='') as f:
@@ -301,7 +300,11 @@ with open(output_path + filename, mode='w', newline='') as f:
 
 
 ## fig8_b
-outconfig_list = ["XRP", "XRP avg", "XRP 99", "XRP 99.9", "SODE", "SODE avg", "SODE 99", "SODE 99.9"]
+outconfig_list = [
+        "XRP", "XRP avg", "XRP 99", "XRP 99.9",
+        "SODE", "SODE avg", "SODE 99", "SODE 99.9",
+        "InStorage", "InStorage avg", "InStorage 99", "InStorage 99.9"
+]
 
 config_list = ["xrp", "hrp"]
 config_dict = {
@@ -332,6 +335,13 @@ for req_per_sec in req_per_sec_list:
         data.append(perf_dict[(req_per_sec, config, "average_latency")] / 1000)
         data.append(perf_dict[(req_per_sec, config, "p99_latency")] / 1000)
         data.append(perf_dict[(req_per_sec, config, "p999_latency")] / 1000)
+
+    # For InStorage
+    data.append(0)
+    data.append(0)
+    data.append(0)
+    data.append(0)
+
     output.append(data)
 
 with open(output_path + filename, mode='w', newline='') as f:
@@ -344,6 +354,40 @@ with open(output_path + filename, mode='w', newline='') as f:
 #
 #   WiredTiger related Figures
 #
+
+## fig11
+outconfig_list = ["read", "XRP", "SODE"]
+
+plot_zipfian_constant_list = [0.6, 0.7, 0.8, 0.9, 0.99, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]
+
+config_list = ["read", "xrp", "hrp"]
+
+for zipfian in plot_zipfian_constant_list:
+    for config in config_list:
+        with open(f"wiredtiger_skewness/result/{zipfian}-zipf-{config}.txt", "r") as fp:
+            data = fp.read()
+            perf_dict[(zipfian, config, "throughput")] = {
+                op: float(re.search(f".*overall:.*{op} throughput (.*?) ops/sec", data).group(1))
+                for op in ["UPDATE", "INSERT", "READ", "SCAN", "READ_MODIFY_WRITE"]
+            }
+            fp.close()
+
+file_name = 'fig11.csv'
+output = []
+for zipfian in plot_zipfian_constant_list:
+    data = []
+    data.append(zipfian)
+    for config in config_list:
+        data.append(sum(perf_dict[(zipfian, config, "throughput")].values()))
+    output.append(data)
+
+with open(output_path + file_name, mode='w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow([''] + outconfig_list)
+    for row in output:
+        writer.writerow(row)
+    f.close()
+
 
 ## fig12
 
@@ -374,7 +418,6 @@ for workload in workload_dict:
                 data = fp.read()
                 perf_dict[(workload, cache_size, thread, config, "bpf_io_time")] = float(re.search("bpf_io_time: (.*?)\n", data).group(1))
                 perf_dict[(workload, cache_size, thread, config, "bpf_io_count")] = float(re.search("bpf_io_count: (.*?)\n", data).group(1))
-
                 fp.close()
 
 

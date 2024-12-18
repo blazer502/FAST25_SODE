@@ -820,9 +820,7 @@ static size_t __nvmev_proc_io(int sqid, int sq_entry, size_t *io_size,
 	prev_clock3 = local_clock();
 #endif
 
-    if (is_reclaim) {
-	    __reclaim_completed_reqs();
-    }
+    __reclaim_completed_reqs();
 
 #ifdef PERF_DEBUG
 	prev_clock4 = local_clock();
@@ -1604,8 +1602,6 @@ int resubmit_logic_single(int sqid, int sq_entry, struct nvmev_io_work *w)
         return -1;
     }
 
-    w->ebpf_time = ktime_get_ns();
-
     if (ebpf_context.done) {
         return 1;
     }
@@ -1681,9 +1677,9 @@ int resubmit_logic(int sqid, int sq_entry, struct nvmev_io_work *w, int subtask)
     ebpf_context.scratch = (char *)on_meta->subtask_scratch[subtask];
     ebpf_context.done = subtask + 1;
     ebpf_prog = on_meta->xrp_bpf_prog;
-    //ebpf_return = BPF_PROG_RUN(ebpf_prog, &ebpf_context);
 
-    ebpf_return = wiredtiger_lookup(&ebpf_context);
+    ebpf_return = BPF_PROG_RUN(ebpf_prog, &ebpf_context);
+    //ebpf_return = wiredtiger_lookup(&ebpf_context);
 
     //printk("%1d - result %d, %d\n", 
     //        subtask, ebpf_context.done, ebpf_context.next_addr[0]);
@@ -2459,6 +2455,7 @@ static int nvmev_io_worker(void *data)
             
             log_io(worker->profiler, curr);
 
+            curr_nsecs = local_clock() + delta;
 			if (w->nsecs_target <= curr_nsecs) {
                 log_latemul(worker->profiler, curr);
 
