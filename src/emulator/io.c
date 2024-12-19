@@ -422,6 +422,8 @@ static int __enqueue_io_req(int sqid, int cqid, int sq_entry, unsigned long long
 	w->status = ret->status;
     w->is_copied = false;
 
+    w->is_resubmit = false;
+
 	w->prev = -1;
 	w->next = -1;
 	w->is_internal = false;
@@ -495,7 +497,8 @@ static void __reclaim_completed_reqs_force(void)
         for (i = 0; i < NR_MAX_PARALLEL_IO; i++) {
 			w = &worker->work_queue[i];
             if (w->is_completed == true && w->is_copied == true &&
-                    w->nsecs_target <= worker->latest_nsecs) {
+                    w->nsecs_target <= worker->latest_nsecs &&
+                    w->is_resubmit == false) {
 
                 if (first_free_seq == -1) {
                     first_free_seq = i;
@@ -594,7 +597,8 @@ void __reclaim_completed_reqs(void)
 		while (curr != -1) {
 			w = &worker->work_queue[curr];
             if (w->is_completed == true && w->is_copied == true &&
-			    w->nsecs_target <= worker->latest_nsecs) {
+			    w->nsecs_target <= worker->latest_nsecs &&
+                w->is_resubmit == false) {
 				last_entry = curr;
 				curr = w->next;
 				nr_reclaimed++;
@@ -2090,16 +2094,16 @@ static int nvmev_resubmit_worker(void *data)
                 w->is_completed = true;
                 smp_mb();
 
-                w->nsecs_target = 0;
+                w->is_resubmit = false;
             }
             else if (ret != -2) {
-                w->is_completed = true;
+                nvmev_init_latency_emulation(w, 0);
+
+                w->is_copied = false;
                 smp_mb();
 
-                nvmev_init_latency_emulation(w, 0);
-                w->is_copied = false;
+                w->is_resubmit = false;
 
-                w->is_completed = false;
                 //printk("QOUT3 on_meta=%016lx, %d, %d", w->on_meta, worker->id, curr);
             }
 
@@ -2231,7 +2235,7 @@ static int nvmev_io_worker(void *data)
             w = &worker->work_queue[curr];
 			worker->latest_nsecs = curr_nsecs;
 
-			if (w->is_completed == true) {
+			if (w->is_resubmit == true || w->is_completed == true) {
 				curr = w->next;
 				continue;
 			}
@@ -2271,7 +2275,7 @@ static int nvmev_io_worker(void *data)
 			}
             
 			if (w->nsecs_target <= curr_nsecs) {
-                if (w->is_sode) {
+                if (w->is_sode && w->is_resubmit == false) {
                     int subtask_idx;
                     struct nvmev_io_worker *other_worker;
                     struct resubmit_data *on_meta;
@@ -2295,7 +2299,7 @@ static int nvmev_io_worker(void *data)
                             int idx = 0;
                             int loc = -1;
 
-                            w->nsecs_target = -1;
+                            w->is_resubmit = true;
 
                             atomic_set(&target_rq[worker->id], worker->id);
                             atomic_set(&curr_rq[worker->id], curr);
@@ -2327,7 +2331,7 @@ static int nvmev_io_worker(void *data)
                                 int idx = 0;
                                 int loc = -1;
 
-                                w->nsecs_target = -1;
+                                w->is_resubmit = true;
 
                                 //printk("EQ on_meta=%016lx, %d, %d", w->on_meta, worker->id, curr);
                                 for (subtask_idx = 0; subtask_idx < 4; subtask_idx++) {
@@ -2486,6 +2490,7 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
             worker->work_queue[i].is_completed = true;
             worker->work_queue[i].is_copied = true;
             worker->work_queue[i].nsecs_target = 0;
+            worker->work_queue[i].is_resubmit = false;
 		}
 		worker->work_queue[NR_MAX_PARALLEL_IO - 1].next = -1;
 		worker->id = worker_id;

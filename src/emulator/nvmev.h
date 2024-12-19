@@ -226,6 +226,7 @@ struct nvmev_io_work {
 
 	bool is_copied;
 	bool is_completed;
+    bool is_resubmit;
     bool is_sode;
 
 	unsigned int status;
