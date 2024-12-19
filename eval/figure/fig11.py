@@ -43,17 +43,17 @@ for entry in dataIn:
         data[labels[i]].append(float(entry[i+1]))
 
 xrp = []
-hrp = []
+sode = []
 for i in range(0, len(data['read'])):
     xrp += [data['XRP'][i] / data['read'][i]]
-    hrp += [data['SODE'][i] / data['read'][i]]
+    sode += [data['SODE'][i] / data['read'][i]]
 
 total = sum(data['XRP']) / sum(data['read'])
 
 plt.axhline(y=29095.15/23485.36, color='C2', linestyle='dashed', label='Uniform (XRP)')
 plt.axhline(y=29742.81/23485.36, color='C1', linestyle='dashed', label='Uniform (SODE)')
 plt.plot(plot_zipfian_constant_list, xrp, label='Zipfian (XRP)', marker='o', markersize=3, color='C2')
-plt.plot(plot_zipfian_constant_list, hrp, label='Zipfian (SODE)', marker='o', markersize=3, color='C1')
+plt.plot(plot_zipfian_constant_list, sode, label='Zipfian (SODE)', marker='o', markersize=3, color='C1')
 
 plt.legend(loc='upper center',
     #fontsize='medium',

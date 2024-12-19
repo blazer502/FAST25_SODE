@@ -44,7 +44,7 @@ thread_list = [
     2,
     3,
 ]
-config_list = ["read", "xrp", "hrp"]
+config_list = ["read", "xrp", "sode"]
 
 perf_dict = dict()
 
@@ -106,7 +106,7 @@ for subplot_index, ax in enumerate(axs):
     
     for thread_index, thread in enumerate(plot_thread_list):
         color = f"C{thread_index+4}"
-        for config_index, config in enumerate(["read", "xrp", "hrp"]):
+        for config_index, config in enumerate(["read", "xrp", "sode"]):
             value_arr = [perf_dict[(workload, "512M", thread, config, "throughput")]["READ" if workload != "ycsb_e.yaml" else "SCAN"] / 1000
                          for workload in workloads]
             
@@ -142,7 +142,7 @@ for subplot_index, ax in enumerate(axs):
 legend_handles = []
 legend_labels = []
 
-config_map = {"Baseline": "read", "XRP": "xrp", "SODE": "hrp"}
+config_map = {"Baseline": "read", "XRP": "xrp", "SODE": "sode"}
 
 for thread in [1, 2, 3]:
     for config in ["Baseline", "XRP", "SODE"]:

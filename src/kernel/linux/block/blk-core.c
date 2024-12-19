@@ -749,7 +749,7 @@ static int blk_partition_remap(struct bio *bio)
 		return -EIO;
 	if (bio_sectors(bio)) {
 		bio->bi_iter.bi_sector += p->bd_start_sect;
-		if (bio->xrp_enabled || bio->hrp_enabled)
+		if (bio->xrp_enabled || bio->sode_enabled)
 			bio->xrp_partition_start_sector = p->bd_start_sect;
 		trace_block_bio_remap(bio, p->bd_dev,
 				      bio->bi_iter.bi_sector -

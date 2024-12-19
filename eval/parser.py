@@ -35,11 +35,11 @@ output_path="figure/data/"
 
 outconfig_list = ["read", "XRP", "SODE"]
 
-config_list = ["read", "xrp", "hrp"]
+config_list = ["read", "xrp", "sode"]
 config_dict = {
     "read": "read",
     "xrp": "XRP",
-    "hrp": "HRP"
+    "sode": "SODE"
 }
 
 layer_list = [3, 6]
@@ -132,11 +132,11 @@ with open(output_path + filename, mode='w', newline='') as f:
 # fig6_c
 
 
-config_list = ["read", "xrp", "hrp"]
+config_list = ["read", "xrp", "sode"]
 config_dict = {
     "read": "read",
     "xrp": "XRP",
-    "hrp": "HRP"
+    "sode": "SODE"
 }
 
 layer_list = [1, 2, 3, 4, 5, 6]
@@ -208,11 +208,11 @@ with open(output_path + filename, mode='w', newline='') as f:
 
 # fig7_a, fig7_b
 
-config_list = ["read", "xrp", "hrp"]
+config_list = ["read", "xrp", "sode"]
 config_dict = {
     "read": "read",
     "xrp": "XRP",
-    "hrp": "HRP"
+    "sode": "SODE"
 }
 
 range_len_list = [i for i in range(1, 100, 5)]
@@ -265,10 +265,10 @@ with open(output_path + filename, mode='w', newline='') as f:
 
 outconfig_list = ["XRP", "SODE"]
 
-config_list = ["xrp", "hrp"]
+config_list = ["xrp", "sode"]
 config_dict = {
     "xrp": "XRP",
-    "hrp": "HRP"
+    "sode": "SODE"
 }
 layer = 6
 thread_list = [i for i in range(6, 24 + 1)]
@@ -306,10 +306,10 @@ outconfig_list = [
         "InStorage", "InStorage avg", "InStorage 99", "InStorage 99.9"
 ]
 
-config_list = ["xrp", "hrp"]
+config_list = ["xrp", "sode"]
 config_dict = {
     "xrp": "XRP",
-    "hrp": "HRP",
+    "sode": "SODE",
 }
 req_per_sec_list = [60000 * i for i in range(1, 12 + 1)]
 
@@ -360,7 +360,7 @@ outconfig_list = ["read", "XRP", "SODE"]
 
 plot_zipfian_constant_list = [0.6, 0.7, 0.8, 0.9, 0.99, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6]
 
-config_list = ["read", "xrp", "hrp"]
+config_list = ["read", "xrp", "sode"]
 
 for zipfian in plot_zipfian_constant_list:
     for config in config_list:
@@ -406,7 +406,7 @@ thread_list = [
     2,
     3,
 ]
-config_list = ["xrp", "hrp"]
+config_list = ["xrp", "sode"]
 
 perf_dict = dict()
 
@@ -445,13 +445,13 @@ for workload in workload_dict:
         else:
             xrp = 0
         
-        if perf_dict[(workload, cache_size, thread, "hrp", "bpf_io_count")] != 0:
-            hrp = perf_dict[(workload, cache_size, thread, "hrp", "bpf_io_time")] / perf_dict[(workload, cache_size, thread, "hrp", "bpf_io_count")]
+        if perf_dict[(workload, cache_size, thread, "sode", "bpf_io_count")] != 0:
+            sode = perf_dict[(workload, cache_size, thread, "sode", "bpf_io_time")] / perf_dict[(workload, cache_size, thread, "sode", "bpf_io_count")]
         else:
-            hrp = 0
+            sode = 0
         
         if xrp != 0:
-            speedup = hrp / xrp
+            speedup = sode / xrp
         else:
             speedup = 0
             
@@ -477,7 +477,7 @@ workload_dict = {
 thread_list = [
     1,
 ]
-config_list = ["read", "hrp", "xrp", "hrp-noparallel"]
+config_list = ["read", "sode", "xrp", "sode-noparallel"]
 
 perf_dict = dict()
 

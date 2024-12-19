@@ -44,14 +44,14 @@ for entry in dataIn:
         data[labels[i]].append(float(entry[i+1]))
 
 xrp = []
-hrp = []
-hrp_single = []
+sode = []
+sode_single = []
 for i in range(0, len(data['read'])):
     xrp += [data['XRP'][i] / data['read'][i]]
-    hrp += [data['SODE'][i] / data['read'][i]]
-    hrp_single += [data['SODE-single'][i] / data['read'][i]]
+    sode += [data['SODE'][i] / data['read'][i]]
+    sode_single += [data['SODE-single'][i] / data['read'][i]]
 
-bars = plt.bar(['XRP', 'SODE (single)', 'SODE (parallel)'], [xrp[0], hrp_single[0], hrp[0]], color=['C2', 'C5', 'C1'], width=0.6)
+bars = plt.bar(['XRP', 'SODE (single)', 'SODE (parallel)'], [xrp[0], sode_single[0], sode[0]], color=['C2', 'C5', 'C1'], width=0.6)
 
 for rect in bars:
     height = rect.get_height()

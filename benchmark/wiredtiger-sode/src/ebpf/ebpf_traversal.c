@@ -150,9 +150,9 @@ int ebpf_lookup(int fd, uint64_t offset, uint8_t *key_buf, uint64_t key_size,
     memcpy(scratch->key, key_buf, key_size);
 
     /* call xrp read */
-    ret = syscall(__NR_read_hrp_parallel, fd, data_buf, EBPF_BLOCK_SIZE, offset, bpf_fd, scratch_buf);
+    ret = syscall(__NR_read_sode_parallel, fd, data_buf, EBPF_BLOCK_SIZE, offset, bpf_fd, scratch_buf);
     if (ret != EBPF_BLOCK_SIZE) {
-        printf("ebpf_lookup: read_xrp failed, ret %d\n", ret);
+        printf("ebpf_lookup: read_sode_parallel failed, ret %d\n", ret);
         return ret;
     }
 

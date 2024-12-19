@@ -80,9 +80,9 @@ BPF_PROG_TYPE(BPF_PROG_TYPE_LSM, lsm,
 
 BPF_PROG_TYPE(BPF_PROG_TYPE_XRP, xrp,
               struct bpf_xrp, struct bpf_xrp_kern)
-BPF_PROG_TYPE(BPF_PROG_TYPE_HRP, xrp,
+BPF_PROG_TYPE(BPF_PROG_TYPE_SODE, xrp,
               struct bpf_xrp, struct bpf_xrp_kern)
-BPF_PROG_TYPE(BPF_PROG_TYPE_HRP_PARALLEL, xrp,
+BPF_PROG_TYPE(BPF_PROG_TYPE_SODE_PARALLEL, xrp,
               struct bpf_xrp, struct bpf_xrp_kern)
 
 BPF_MAP_TYPE(BPF_MAP_TYPE_ARRAY, array_map_ops)

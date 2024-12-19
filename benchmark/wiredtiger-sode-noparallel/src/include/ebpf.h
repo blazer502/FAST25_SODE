@@ -114,7 +114,7 @@ int ebpf_parse_cell_addr(uint8_t **cellp, uint64_t *offset, uint64_t *size,
                          bool update_pointer);
 
 #define __NR_read_xrp 445
-#define __NR_read_hrp 446
+#define __NR_read_sode 446
 
 int ebpf_lookup(int fd, uint64_t offset, uint8_t *key_buf, uint64_t key_size, 
                 uint8_t *data_buf, uint8_t *scratch_buf, uint8_t **page_data_arr_p,

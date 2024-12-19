@@ -73,7 +73,7 @@ plt.text(max(data[labels[8]]), 35.5, int(max(data[labels[8]])), ha='center', rot
 
 
 
-#plt.plot(data[labels[8]], data[labels[11]], label='ODR(1+3, hrp)', marker='o', markersize=3)
+#plt.plot(data[labels[8]], data[labels[11]], label='ODR(1+3, sode)', marker='o', markersize=3)
 #plt.plot(data[labels[12]], data[labels[15]], label='Prev ODR(1.5+worst)', marker='o', markersize=3)
 #plt.plot(data[labels[16]], data[labels[19]], label='ODR(1.5+worst)', marker='o', markersize=3)
 #plt.plot(data[labels[20]], data[labels[23]], label='ODR(1.5+worst)', marker='o', markersize=3)

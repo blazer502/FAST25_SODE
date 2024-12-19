@@ -186,7 +186,7 @@ void submit_to_sq(struct submitter *s, unsigned long long user_data,
 	struct io_uring_sqe *sqe = &s->sqes[index];
 	sqe->fd = 0;
 	sqe->flags = IOSQE_FIXED_FILE;
-	sqe->opcode = IORING_OP_READ_HRP;
+	sqe->opcode = IORING_OP_READ_SODE;
 	sqe->addr = (unsigned long) iovec;
 	sqe->len = 1;
 	sqe->off = offset;

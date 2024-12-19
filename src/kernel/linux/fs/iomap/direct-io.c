@@ -155,7 +155,7 @@ static void iomap_dio_bio_end_io(struct bio *bio)
 	struct iomap_dio *dio = bio->bi_private;
 	bool should_dirty = (dio->flags & IOMAP_DIO_DIRTY);
 
-	if (bio->xrp_enabled || bio->hrp_enabled) {
+	if (bio->xrp_enabled || bio->sode_enabled) {
 		put_page(bio->xrp_scratch_page);
 		bio->xrp_scratch_page = NULL;
 		bpf_prog_put(bio->xrp_bpf_prog);
@@ -334,22 +334,22 @@ iomap_dio_bio_actor(struct inode *inode, loff_t pos, loff_t length,
 		}
 
 		bio->xrp_enabled = dio->iocb->xrp_enabled;
-		bio->hrp_enabled = dio->iocb->hrp_enabled;
-        bio->hrp_parallel = dio->iocb->hrp_parallel;
+		bio->sode_enabled = dio->iocb->sode_enabled;
+        bio->sode_parallel = dio->iocb->sode_parallel;
 		bio->xrp_inode = dio->iocb->ki_filp->f_inode;
 		bio->xrp_partition_start_sector = 0;
 		bio->xrp_count = 1;
-		if (bio->xrp_enabled || bio->hrp_enabled) {
+		if (bio->xrp_enabled || bio->sode_enabled) {
 			if (get_user_pages_fast(dio->iocb->xrp_scratch_buf, 1, FOLL_WRITE, &bio->xrp_scratch_page) != 1) {
 				printk("iomap_dio_bio_actor: failed to get scratch page\n");
 				bio->xrp_enabled = false;
-				bio->hrp_enabled = false;
+				bio->sode_enabled = false;
 			}
 		}
         
-        if (bio->xrp_enabled || bio->hrp_enabled) {
-            if (bio->hrp_enabled) {
-			    bio->xrp_bpf_prog = bpf_prog_get_type(dio->iocb->xrp_bpf_fd, BPF_PROG_TYPE_HRP);
+        if (bio->xrp_enabled || bio->sode_enabled) {
+            if (bio->sode_enabled) {
+			    bio->xrp_bpf_prog = bpf_prog_get_type(dio->iocb->xrp_bpf_fd, BPF_PROG_TYPE_SODE);
             }
             else {
 			    bio->xrp_bpf_prog = bpf_prog_get_type(dio->iocb->xrp_bpf_fd, BPF_PROG_TYPE_XRP);
@@ -360,7 +360,7 @@ iomap_dio_bio_actor(struct inode *inode, loff_t pos, loff_t length,
 				put_page(bio->xrp_scratch_page);
 				bio->xrp_scratch_page = NULL;
 				bio->xrp_enabled = false;
-				bio->hrp_enabled = false;
+				bio->sode_enabled = false;
 			}
 		}
 

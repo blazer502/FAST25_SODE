@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -15,14 +15,14 @@ UTILS_PATH="$BASE_DIR/utils"
 BPFKV_IO_URING_PATH="$BASE_DIR/benchmark/Specialized-BPF-KV/io_uring"
 BPFKV_IO_URING_OPEN_LOOP_PATH="$BASE_DIR/benchmark/Specialized-BPF-KV/io_uring_open_loop"
 
-MOUNT_POINT="/mnt/hrp"
+MOUNT_POINT="/mnt/sode"
 DB_PATH="$MOUNT_POINT/bpfkv_test_db"
 
 DEV_NAME="/dev/nvme0n1"
 NUM_OPS=1000000
 
 if [ $# -ne 3 ] && [ $# -ne 4 ]; then
-    printf "Usage: $0 <index layer (min: 1, max: 6)> <number of threads (min: 1, max: 12)> <mode (read, xrp, io_uring, hrp)> <block device (optional, default: $DEV_NAME)>\n"
+    printf "Usage: $0 <index layer (min: 1, max: 6)> <number of threads (min: 1, max: 12)> <mode (read, xrp, io_uring, sode)> <block device (optional, default: $DEV_NAME)>\n"
     exit 1
 fi
 LAYER=$1
@@ -36,8 +36,8 @@ if [ $NUM_THREADS -lt 1 ] || [ $NUM_THREADS -gt 12 ]; then
     exit 1
 fi
 MODE="$3"
-if [ $MODE != "read" ] && [ $MODE != "xrp" ] && [ $MODE != "io_uring" ] && [ $MODE != "hrp" ]; then
-    printf "MODE $MODE is invalid. Available options are: read, xrp, io_uring, hrp.\n"
+if [ $MODE != "read" ] && [ $MODE != "xrp" ] && [ $MODE != "io_uring" ] && [ $MODE != "sode" ]; then
+    printf "MODE $MODE is invalid. Available options are: read, xrp, io_uring, sode.\n"
     exit 1
 fi
 if [ ! -z $4 ]; then
@@ -93,14 +93,14 @@ elif [ $MODE == "io_uring" ]; then
     printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, and io_uring...\n"
     sudo ./db --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 | tee $EVAL_PATH/result/$LAYER-layer-$NUM_THREADS-threads-iouring.txt
     popd
-elif [ $MODE == "hrp" ]; then
+elif [ $MODE == "sode" ]; then
     pushd $BPFKV_PATH
     sudo rm -rf $MOUNT_POINT/*
     printf "Creating a BPF-KV database file with $LAYER layers of index...\n"
     sudo ./simplekv $DB_PATH $LAYER create
 
-    printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, and HRP...\n"
-    sudo ./simplekv $DB_PATH $LAYER get --requests=$NUM_OPS --threads $NUM_THREADS --use-hrp | tee $EVAL_PATH/result/$LAYER-layer-$NUM_THREADS-threads-hrp.txt
+    printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, and SODE...\n"
+    sudo ./simplekv $DB_PATH $LAYER get --requests=$NUM_OPS --threads $NUM_THREADS --use-sode | tee $EVAL_PATH/result/$LAYER-layer-$NUM_THREADS-threads-sode.txt
     popd
 fi
 

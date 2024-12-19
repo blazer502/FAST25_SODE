@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -8,10 +8,10 @@ fi
 SCRIPT_PATH=`realpath $0`
 EVAL_PATH=`dirname $SCRIPT_PATH`
 BASE_DIR=`realpath $EVAL_PATH/../..`
-WT_PATH="$BASE_DIR/benchmark/wiredtiger-hrp"
+WT_PATH="$BASE_DIR/benchmark/wiredtiger-sode-noparallel"
 YCSB_PATH="$BASE_DIR/benchmark/My-YCSB"
 UTILS_PATH="$BASE_DIR/utils"
-MOUNT_POINT="/mnt/hrp"
+MOUNT_POINT="/mnt/sode"
 DB_PATH="$MOUNT_POINT/tigerhome"
 CACHED_DB_PATH="/tigerhome"
 
@@ -103,7 +103,7 @@ fi
 printf "Evaluating WiredTiger with $CONFIG, $CACHE_SIZE cache and $NUM_THREADS threads...\n"
 if [ $USE_XRP == 'y' ]; then
     export WT_BPF_PATH="$WT_PATH/bpf_prog/wt_bpf.o"
-    sudo -E numactl --membind=0 --cpunodebind=0 ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$CONFIG-$CACHE_SIZE-cache-$NUM_THREADS-threads-hrp.txt
+    sudo -E numactl --membind=0 --cpunodebind=0 ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$CONFIG-$CACHE_SIZE-cache-$NUM_THREADS-threads-sode-noparallel.txt
 else
     unset WT_BPF_PATH
     sudo -E numactl --membind=0 --cpunodebind=0 ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$CONFIG-$CACHE_SIZE-cache-$NUM_THREADS-threads-read.txt

@@ -27,7 +27,7 @@ workload:
 
 # WiredTiger Parameters
 wiredtiger:
-  data_dir: "/mnt/hrp/tigerhome"
+  data_dir: "/mnt/sode/tigerhome"
   table_name: "lsm:karaage"
   conn_config: "create,direct_io=[data,checkpoint],buffer_alignment=512B,mmap=false,cache_size=128M,eviction_trigger=95,eviction_target=80,eviction=(threads_max=2,threads_min=2),statistics=(fast)"
   session_config: "isolation=read-uncommitted"

@@ -230,7 +230,7 @@ struct nvmev_io_work {
 
 	volatile bool is_copied;
 	volatile bool is_completed;
-    bool is_hrp;
+    bool is_sode;
 
     atomic_t is_resubmit;
 

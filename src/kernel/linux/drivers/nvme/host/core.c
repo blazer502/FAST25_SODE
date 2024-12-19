@@ -980,7 +980,7 @@ struct resubmit_data *__alloc_resubmit_req(struct request *req, void *dev)
     }
 
     prog = req->bio->xrp_bpf_prog;
-    if (req->bio->hrp_parallel) {
+    if (req->bio->sode_parallel) {
         is_parallel = true;
     }
 

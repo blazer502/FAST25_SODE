@@ -32,7 +32,7 @@ static struct argp_option get_opts[] = {
                                             " Must be less than 3 and the number of database layers." },
         { "key", 'k', "KEY", 0, "Retrieve a single key from the database." },
         { "use-xrp", 'x', 0, 0, "Use the (previously) loaded XRP BPF function to query the DB." },
-        { "use-hrp", 'h', 0, 0, "Use the (previously) loaded HRP BPF function to query the DB." },
+        { "use-sode", 'h', 0, 0, "Use the (previously) loaded SODE BPF function to query the DB." },
         { "requests", 'r', "REQ", 0, "Number of requests to submit per thread. Ignored if -k is set." },
         { "threads" , 't', "N_THREADS", 0, "Number of concurrent threads to run. Ignored if -k is set." },
         { 0 }
@@ -60,7 +60,7 @@ static int _parse_get_opts(int key, char *arg, struct argp_state *state) {
             break;
 
         case 'h':
-            st -> hrp = 1;
+            st -> sode = 1;
             break;
 
         case 'r': {
@@ -126,7 +126,7 @@ static struct argp_option range_opts[] = {
         { "dump", 'd', 0, 0, "Dump values to stdout." },
         { "sum", RANGE_SUM_KEY, 0, 0, "Sum the first 8 bytes of each value instead of returning them."},
         { "use-xrp", 'x', 0, 0, "Use the (previously) loaded XRP BPF function to query the DB." },
-        { "use-hrp", 'h', 0, 0, "Use the (previously) loaded HRP BPF function to query the DB." },
+        { "use-sode", 'h', 0, 0, "Use the (previously) loaded SODE BPF function to query the DB." },
         { "requests", 'r', "REQ", 0, "Number of requests to submit per thread. Ignored if -k is set." },
         { "range-size", 's', "SIZE", 0, "Size of randomly generated ranges for benchmarking." },
         { 0 }
@@ -175,7 +175,7 @@ static int _parse_range_opts(int key, char *arg, struct argp_state *state) {
             break;
 
         case 'h':
-            st->hrp = 1;
+            st->sode = 1;
             break;
 
         case 's': {

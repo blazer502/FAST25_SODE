@@ -27,7 +27,7 @@ static char doc[] =
 "SimpleKV Benchmark for Oliver XRP Kernel\n\nCommands: create, get, range\v\
 This utility provides several tools for testing and benchmarking \
 SimpleKV database files on XRP enabled kernels. \
-\n\nIf you are using XRP or HRP eBPF functions it is your responsibility to ensure \
+\n\nIf you are using XRP or SODE eBPF functions it is your responsibility to ensure \
 the correct function is loaded before executing your query with SimpleKV. \
 SimpleKV currently DOES NOT verify that the correct eBPF is loaded.";
 
@@ -116,7 +116,7 @@ int terminate(void) {
     return 0;
 }
 
-void initialize_workers(WorkerArg *args, size_t total_op_count, char *db_path, int use_xrp, int use_hrp, int bpf_fd) {
+void initialize_workers(WorkerArg *args, size_t total_op_count, char *db_path, int use_xrp, int use_sode, int bpf_fd) {
     size_t offset = 0;
     args[0].latency_arr = (size_t *) malloc(total_op_count * sizeof(size_t));
     BUG_ON(args[0].latency_arr == NULL);
@@ -126,7 +126,7 @@ void initialize_workers(WorkerArg *args, size_t total_op_count, char *db_path, i
         args[i].db_handler = get_handler(db_path, O_RDONLY);
         args[i].timer = 0;
         args[i].use_xrp = use_xrp;
-        args[i].use_hrp = use_hrp;
+        args[i].use_sode = use_sode;
         args[i].bpf_fd = bpf_fd;
         args[i].latency_arr = args[0].latency_arr + offset;
         offset += args[i].op_count;
@@ -180,7 +180,7 @@ static void print_tail_latency(WorkerArg* args, size_t request_num) {
 }
 
 int run(char *db_path, size_t layer_num, size_t request_num, size_t thread_num, int use_xrp,
-            int use_hrp, int bpf_fd, size_t cache_level) {
+            int use_sode, int bpf_fd, size_t cache_level) {
 
     printf("Running benchmark with %ld layers, %ld requests, and %ld thread(s)\n",
                 layer_num, request_num, thread_num);
@@ -193,7 +193,7 @@ int run(char *db_path, size_t layer_num, size_t request_num, size_t thread_num, 
     pthread_t tids[worker_num];
     WorkerArg args[worker_num];
 
-    initialize_workers(args, request_num, db_path, use_xrp, use_hrp, bpf_fd);
+    initialize_workers(args, request_num, db_path, use_xrp, use_sode, bpf_fd);
 
     clock_gettime(CLOCK_REALTIME, &start);
     srandom(start.tv_nsec ^ start.tv_sec);
@@ -250,7 +250,7 @@ void *subtask(void *args) {
         if (r->use_xrp) {
             retval = lookup_bpf(false, r->db_handler, r->bpf_fd, &query, ROOT_NODE_OFFSET);
         }
-        else if (r->use_hrp) {
+        else if (r->use_sode) {
             retval = lookup_bpf(true, r->db_handler, r->bpf_fd, &query, ROOT_NODE_OFFSET);
         } else {
             retval = lookup_key_userspace(r->db_handler, &query, index_offset);
@@ -270,7 +270,7 @@ void *subtask(void *args) {
 
         /* Check result, print errors, etc */
         if (retval < 0) {
-            fprintf(stderr, "XRP or HRP pread failed with code %d\n", errno);
+            fprintf(stderr, "XRP or SODE pread failed with code %d\n", errno);
         } else if (query.found == 0) {
             fprintf(stderr, "Value for key %ld not found\n", key);
         } else if (key != long_val) {

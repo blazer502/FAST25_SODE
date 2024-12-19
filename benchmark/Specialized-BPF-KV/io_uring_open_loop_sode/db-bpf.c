@@ -562,7 +562,7 @@ int load_bpf_program(char *path) {
     struct bpf_object *obj;
     int ret, progfd;
 
-    ret = bpf_prog_load(path, BPF_PROG_TYPE_HRP, &obj, &progfd);
+    ret = bpf_prog_load(path, BPF_PROG_TYPE_SODE, &obj, &progfd);
     if (ret) {
         printf("Failed to load bpf program\n");
         exit(1);

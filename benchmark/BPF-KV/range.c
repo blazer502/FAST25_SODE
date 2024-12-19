@@ -41,8 +41,8 @@ int do_range_cmd(int argc, char *argv[], struct ArgState *as) {
     if (ra.xrp) {
         bpf_fd = load_bpf_program(false, "xrp-bpf/range.o");
     }
-    else if (ra.hrp) {
-        bpf_fd = load_bpf_program(true, "hrp-bpf/range.o");
+    else if (ra.sode) {
+        bpf_fd = load_bpf_program(true, "sode-bpf/range.o");
     }
 
     /**
@@ -74,7 +74,7 @@ int do_range_cmd(int argc, char *argv[], struct ArgState *as) {
 
         for (;;) {
             clock_gettime(CLOCK_REALTIME, &l_start);
-            int rv = submit_range_query(&query, db_fd, ra.xrp, ra.hrp, bpf_fd);
+            int rv = submit_range_query(&query, db_fd, ra.xrp, ra.sode, bpf_fd);
             clock_gettime(CLOCK_REALTIME, &l_stop);
 
             total_latency += NS_PER_SEC * (l_stop.tv_sec - l_start.tv_sec) + (l_stop.tv_nsec - l_start.tv_nsec);
@@ -103,7 +103,7 @@ int do_range_cmd(int argc, char *argv[], struct ArgState *as) {
     return 0;
 }
 
-int submit_range_query(struct RangeQuery *query, int db_fd, int use_xrp, int use_hrp, int bpf_fd) {
+int submit_range_query(struct RangeQuery *query, int db_fd, int use_xrp, int use_sode, int bpf_fd) {
     char *scratch = (char *) aligned_alloca(0x1000, 0x1000);
     memset(scratch, 0, 0x1000);
     /* XRP code path */
@@ -119,13 +119,13 @@ int submit_range_query(struct RangeQuery *query, int db_fd, int use_xrp, int use
         }
         return (int) ret;
     }
-    /* HRP code path */
-    else if (use_hrp) {
+    /* SODE code path */
+    else if (use_sode) {
         char *buf = (char *) aligned_alloca(0x1000, 0x1000);
 
         struct RangeQuery *scratch_query = (struct RangeQuery*) scratch;
         *scratch_query = *query;
-        long ret = syscall(SYS_READ_HRP, db_fd, buf, BLK_SIZE, query->_resume_from_leaf, bpf_fd, scratch);
+        long ret = syscall(SYS_READ_SODE, db_fd, buf, BLK_SIZE, query->_resume_from_leaf, bpf_fd, scratch);
         *query = *scratch_query;
         if (ret > 0) {
             return 0;

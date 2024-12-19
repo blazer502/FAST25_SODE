@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -13,7 +13,7 @@ UTILS_PATH="$BASE_DIR/utils"
 
 # Specialized BPF-KV
 BPFKV_IO_URING_OPEN_LOOP_PATH="$BASE_DIR/benchmark/Specialized-BPF-KV/io_uring_open_loop"
-BPFKV_IO_URING_OPEN_LOOP_PATH_HRP="$BASE_DIR/benchmark/Specialized-BPF-KV/io_uring_open_loop_hrp"
+BPFKV_IO_URING_OPEN_LOOP_PATH_SODE="$BASE_DIR/benchmark/Specialized-BPF-KV/io_uring_open_loop_sode"
 
 DEV_NAME="/dev/nvme0n1"
 if [ ! -z $1 ]; then
@@ -41,7 +41,7 @@ $UTILS_PATH/disable_cpu_freq_scaling.sh
 # Create result folder
 mkdir -p $EVAL_PATH/result
 
-# Specialized BPF-KV for HRP-enabled io_uring with open-loop load generator
+# Specialized BPF-KV for SODE-enabled io_uring with open-loop load generator
 pushd $BPFKV_IO_URING_OPEN_LOOP_PATH
 # Unmont disk (io_uring is measured with raw block device)
 $UTILS_PATH/unmount_disk.sh $DEV_NAME
@@ -57,13 +57,13 @@ for NUM_THREADS in {6..24}; do
 done
 popd
 
-pushd $BPFKV_IO_URING_OPEN_LOOP_PATH_HRP
+pushd $BPFKV_IO_URING_OPEN_LOOP_PATH_SODE
 for NUM_THREADS in {6..24}; do
-    printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, $REQ_PER_SEC ops/s, and HRP...\n"
+    printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, $REQ_PER_SEC ops/s, and SODE...\n"
     # Warmup first
     sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS))
 
-    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS)) | tee $EVAL_PATH/result/$NUM_THREADS-threads-hrp.txt
+    sudo numactl --membind=0 --cpunodebind=0 ./db-bpf --run $LAYER $NUM_OPS $NUM_THREADS 100 0 0 $(($REQ_PER_SEC / $NUM_THREADS)) | tee $EVAL_PATH/result/$NUM_THREADS-threads-sode.txt
 done
 popd
 

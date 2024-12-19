@@ -13,22 +13,22 @@ printf "wiredtiger_skweness"
 
 pushd wiredtiger_skewness
 ./run_baseline_exp.sh $DEV_NAME
-./run_hrp_exp.sh $DEV_NAME
+./run_sode_exp.sh $DEV_NAME
 popd
 
 printf "wiredtiger_throughput\n"
 
 pushd wiredtiger_throughput
 ./run_baseline_exp.sh $DEV_NAME
-./run_hrp_exp.sh $DEV_NAME
-./run_hrp_noparallel_exp.sh $DEV_NAME
+./run_sode_exp.sh $DEV_NAME
+./run_sode_noparallel_exp.sh $DEV_NAME
 popd
 
 printf "wiredtiger_tail_latency\n"
 
 pushd wiredtiger_tail_latency
 ./run_baseline_exp.sh $DEV_NAME
-./run_hrp_exp.sh $DEV_NAME
+./run_sode_exp.sh $DEV_NAME
 popd
 
 

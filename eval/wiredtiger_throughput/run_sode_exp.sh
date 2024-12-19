@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -8,7 +8,7 @@ fi
 SCRIPT_PATH=`realpath $0`
 EVAL_PATH=`dirname $SCRIPT_PATH`
 BASE_DIR=`realpath $EVAL_PATH/../..`
-WT_PATH="$BASE_DIR/benchmark/wiredtiger-hrp-noparallel"
+WT_PATH="$BASE_DIR/benchmark/wiredtiger-sode"
 YCSB_PATH="$BASE_DIR/benchmark/My-YCSB"
 
 DEV_NAME="/dev/nvme0n1"
@@ -18,7 +18,7 @@ fi
 printf "DEV_NAME=$DEV_NAME\n"
 
 pushd $BASE_DIR/benchmark
-./build_and_install_wiredtiger-hrp-noparallel.sh 1> /dev/null 2> /dev/null
+./build_and_install_wiredtiger-sode.sh 1> /dev/null 2> /dev/null
 ./build_and_install_ycsb.sh 1> /dev/null 2> /dev/null
 popd
 
@@ -35,11 +35,18 @@ fi
 
 cp $YCSB_PATH/wiredtiger/original_config/* $YCSB_PATH/wiredtiger/config
 
-for CONFIG in "ycsb_c.yaml"; do
-    NUM_THREADS=1
+for CONFIG in "ycsb_a.yaml" "ycsb_b.yaml" "ycsb_c.yaml" "ycsb_d.yaml" "ycsb_e.yaml" "ycsb_f.yaml"; do
     CACHE_SIZE=512
-    # Evaluate WiredTiger with HRP
-    $EVAL_PATH/run_hrp_noparallel_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME
+    for NUM_THREADS in 1 2 3; do
+        # Evaluate WiredTiger with SODE
+        $EVAL_PATH/run_sode_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME
+    done
+    
+    NUM_THREADS=1
+    for CACHE_SIZE in 512 1024 2048 4096; do
+        # Evaluate WiredTiger with SODE
+        $EVAL_PATH/run_sode_single_exp.sh $CONFIG $CACHE_SIZE $NUM_THREADS y $DEV_NAME
+    done
 done
 
 printf "Done. Results are stored in $EVAL_PATH/result\n"

@@ -509,9 +509,9 @@ asmlinkage long sys_pread64(unsigned int fd, char __user *buf,
 			    size_t count, loff_t pos);
 asmlinkage long sys_read_xrp(unsigned int fd, char __user *buf,
 			     size_t count, loff_t pos, unsigned int bpf_fd, char __user *scratch_buf);
-asmlinkage long sys_read_hrp(unsigned int fd, char __user *buf,
+asmlinkage long sys_read_sode(unsigned int fd, char __user *buf,
 			     size_t count, loff_t pos, unsigned int bpf_fd, char __user *scratch_buf);
-asmlinkage long sys_read_hrp_parallel(unsigned int fd, char __user *buf,
+asmlinkage long sys_read_sode_parallel(unsigned int fd, char __user *buf,
 			     size_t count, loff_t pos, unsigned int bpf_fd, char __user *scratch_buf);
 asmlinkage long sys_pwrite64(unsigned int fd, const char __user *buf,
 			     size_t count, loff_t pos);

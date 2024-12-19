@@ -322,8 +322,8 @@ enum rw_hint {
 struct kiocb {
 	struct file		*ki_filp;
 	bool			xrp_enabled;
-	bool			hrp_enabled;
-    bool            hrp_parallel;
+	bool			sode_enabled;
+    bool            sode_parallel;
 	char __user		*xrp_scratch_buf;
 	unsigned int		xrp_bpf_fd;
 

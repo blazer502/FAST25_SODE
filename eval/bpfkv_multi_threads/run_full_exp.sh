@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -11,7 +11,7 @@ BASE_DIR=`realpath $EVAL_PATH/../..`
 BPFKV_PATH="$BASE_DIR/benchmark/BPF-KV"
 UTILS_PATH="$BASE_DIR/utils"
 
-MOUNT_POINT="/mnt/hrp"
+MOUNT_POINT="/mnt/sode"
 DB_PATH="$MOUNT_POINT/bpfkv_test_db"
 
 DEV_NAME="/dev/nvme0n1"
@@ -46,8 +46,8 @@ for LAYER in 3 6; do
     sudo numactl --membind=0 --cpunodebind=0 ./simplekv $DB_PATH $LAYER create
 
     for NUM_THREADS in {1..12}; do
-        printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, and HRP...\n"
-        sudo numactl --membind=0 --cpunodebind=0 ./simplekv $DB_PATH $LAYER get --requests=$NUM_OPS --threads=$NUM_THREADS --use-hrp | tee $EVAL_PATH/result/$LAYER-layer-$NUM_THREADS-threads-hrp.txt
+        printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, and SODE...\n"
+        sudo numactl --membind=0 --cpunodebind=0 ./simplekv $DB_PATH $LAYER get --requests=$NUM_OPS --threads=$NUM_THREADS --use-sode | tee $EVAL_PATH/result/$LAYER-layer-$NUM_THREADS-threads-sode.txt
 
         printf "Evaluating BPF-KV with $LAYER index lookup, $NUM_THREADS threads, and XRP...\n"
         sudo numactl --membind=0 --cpunodebind=0 ./simplekv $DB_PATH $LAYER get --requests=$NUM_OPS --threads=$NUM_THREADS --use-xrp | tee $EVAL_PATH/result/$LAYER-layer-$NUM_THREADS-threads-xrp.txt

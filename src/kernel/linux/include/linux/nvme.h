@@ -682,7 +682,7 @@ enum nvme_opcode {
 	nvme_cmd_zone_mgmt_send	= 0x79,
 	nvme_cmd_zone_mgmt_recv	= 0x7a,
 	nvme_cmd_zone_append	= 0x7d,
-    nvme_cmd_hrp            = 0x80,
+    nvme_cmd_sode           = 0x80,
 };
 
 #define nvme_opcode_name(opcode)	{ opcode, #opcode }

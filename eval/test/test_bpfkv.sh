@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -10,7 +10,7 @@ EVAL_PATH=`dirname $SCRIPT_PATH`
 BASE_DIR=`realpath $EVAL_PATH/../../`
 BPFKV_PATH="$BASE_DIR/benchmark/BPF-KV"
 UTILS_PATH="$BASE_DIR/utils"
-MOUNT_POINT="/mnt/hrp"
+MOUNT_POINT="/mnt/sode"
 DB_PATH="$MOUNT_POINT/bpfkv_test_db"
 
 DEV_NAME="/dev/nvme0n1"
@@ -37,8 +37,8 @@ sudo rm -rf $MOUNT_POINT/*
 printf "Creating a 5-layer database file...\n"
 sudo ./simplekv $DB_PATH 5 create
 
-printf "Running a short point lookup benchmark with HRP enabled...\n"
-sudo ./simplekv $DB_PATH 5 get --requests=1000 --use-hrp
+printf "Running a short point lookup benchmark with SODE enabled...\n"
+sudo ./simplekv $DB_PATH 5 get --requests=1000 --use-sode
 
 popd
 printf "Done.\n"

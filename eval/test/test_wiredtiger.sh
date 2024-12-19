@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -8,11 +8,11 @@ fi
 SCRIPT_PATH=`realpath $0`
 EVAL_PATH=`dirname $SCRIPT_PATH`
 BASE_DIR=`realpath $EVAL_PATH/../../`
-WT_PATH="$BASE_DIR/benchmark/wiredtiger-hrp"
+WT_PATH="$BASE_DIR/benchmark/wiredtiger-sode"
 YCSB_PATH="$BASE_DIR/benchmark/My-YCSB"
 YCSB_CONFIG_PATH="$YCSB_PATH/wiredtiger/config/test.yaml"
 UTILS_PATH="$BASE_DIR/utils"
-MOUNT_POINT="/mnt/hrp"
+MOUNT_POINT="/mnt/sode"
 DB_PATH="$MOUNT_POINT/tigerhome"
 
 DEV_NAME="/dev/nvme0n1"
@@ -22,7 +22,7 @@ fi
 printf "DEV_NAME=$DEV_NAME\n"
 
 pushd $BASE_DIR/benchmark
-./build_and_install_wiredtiger-hrp.sh 1> /dev/null 2> /dev/null
+./build_and_install_wiredtiger-sode.sh 1> /dev/null 2> /dev/null
 ./build_and_install_ycsb.sh 1> /dev/null 2> /dev/null
 popd
 
@@ -56,7 +56,7 @@ export WT_BPF_PATH="$WT_PATH/bpf_prog/wt_bpf.o"
 printf "Creating a small WiredTiger database...\n"
 sudo -E ./init_wt $YCSB_CONFIG_PATH
 
-printf "Running a short YCSB A experiment with HRP enabled...\n"
+printf "Running a short YCSB A experiment with SODE enabled...\n"
 sudo -E ./run_wt $YCSB_CONFIG_PATH
 
 popd

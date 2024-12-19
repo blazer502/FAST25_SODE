@@ -21,7 +21,7 @@ get.o : get.c get.h db_types.h parse.h simplekv.h
 .PHONY: bpf
 bpf:
 	make -C xrp-bpf -f Makefile
-	make -C hrp-bpf -f Makefile
+	make -C sode-bpf -f Makefile
 
 .PHONY: clean
 clean:

@@ -282,8 +282,8 @@ struct bio {
 	int			xrp_count;
 	struct page		*xrp_scratch_page;
 	struct bpf_prog		*xrp_bpf_prog;
-	bool	    hrp_enabled;
-    bool        hrp_parallel;
+	bool	    sode_enabled;
+    bool        sode_parallel;
 	u64			xrp_extent_version;
 	loff_t			xrp_file_offset;
 

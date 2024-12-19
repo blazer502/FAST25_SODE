@@ -2964,10 +2964,10 @@ attach_type_to_prog_type(enum bpf_attach_type attach_type)
 		return BPF_PROG_TYPE_XDP;
 	case BPF_XRP:
 		return BPF_PROG_TYPE_XRP;
-	case BPF_HRP:
-		return BPF_PROG_TYPE_HRP;
-	case BPF_HRP_PARALLEL:
-		return BPF_PROG_TYPE_HRP_PARALLEL;
+	case BPF_SODE:
+		return BPF_PROG_TYPE_SODE;
+	case BPF_SODE_PARALLEL:
+		return BPF_PROG_TYPE_SODE_PARALLEL;
 	default:
 		return BPF_PROG_TYPE_UNSPEC;
 	}
@@ -3029,10 +3029,10 @@ static int bpf_prog_attach(const union bpf_attr *attr)
 	case BPF_PROG_TYPE_XRP:
 		ret = xrp_bpf_prog_attach(attr, prog);
 		break;
-	case BPF_PROG_TYPE_HRP:
+	case BPF_PROG_TYPE_SODE:
 		ret = xrp_bpf_prog_attach(attr, prog);
 		break;
-	case BPF_PROG_TYPE_HRP_PARALLEL:
+	case BPF_PROG_TYPE_SODE_PARALLEL:
 		ret = xrp_bpf_prog_attach(attr, prog);
 		break;
 	default:
@@ -3073,9 +3073,9 @@ static int bpf_prog_detach(const union bpf_attr *attr)
 		return cgroup_bpf_prog_detach(attr, ptype);
 	case BPF_PROG_TYPE_XRP:
 		return xrp_bpf_prog_detach(attr);
-	case BPF_PROG_TYPE_HRP:
+	case BPF_PROG_TYPE_SODE:
 		return xrp_bpf_prog_detach(attr);
-	case BPF_PROG_TYPE_HRP_PARALLEL:
+	case BPF_PROG_TYPE_SODE_PARALLEL:
 		return xrp_bpf_prog_detach(attr);
 	default:
 		return -EINVAL;

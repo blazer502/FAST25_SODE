@@ -51,7 +51,7 @@ thread_list = [
     2,
     3,
 ]
-config_list = ["read", "xrp", "hrp"]
+config_list = ["read", "xrp", "sode"]
 
 perf_dict = dict()
 
@@ -112,7 +112,7 @@ for subplot_index, ax in enumerate(axs):
         X = np.array([0])  # One group for each of the other subplots
         workloads = [plot_workload_list[subplot_index + 2]]
     
-    for config_index, config in enumerate(["read", "xrp", "hrp"]):
+    for config_index, config in enumerate(["read", "xrp", "sode"]):
         for cache_size_index, cache_size in enumerate(plot_cache_size_list):
             value_arr = [sum(perf_dict[(workload, cache_size, 1, config, "throughput")].values()) / 1000
                          for workload in workloads]

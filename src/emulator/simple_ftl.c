@@ -41,11 +41,11 @@ static unsigned long long __schedule_io_units(int opcode, unsigned long lba, uns
 		delay = nvmev_vdev->config.read_delay;
 		latency = nvmev_vdev->config.read_time;
 		trailing = nvmev_vdev->config.read_trailing;
-	} else if (opcode == (nvme_cmd_read | nvme_cmd_hrp)) {
+	} else if (opcode == (nvme_cmd_read | nvme_cmd_sode)) {
 		delay = nvmev_vdev->config.read_delay;
 		latency = nvmev_vdev->config.read_time;
 		trailing = nvmev_vdev->config.read_trailing;
-	} else if (opcode == (nvme_cmd_write | nvme_cmd_hrp)) {
+	} else if (opcode == (nvme_cmd_write | nvme_cmd_sode)) {
 		delay = nvmev_vdev->config.write_delay;
 		latency = nvmev_vdev->config.write_time;
 		trailing = nvmev_vdev->config.write_trailing;
@@ -96,8 +96,8 @@ bool simple_proc_nvme_io_cmd(struct nvmev_ns *ns, struct nvmev_request *req,
 			cmd->common.opcode, cmd->rw.slba,
 			__cmd_io_size((struct nvme_rw_command *)cmd), __get_wallclock());
 		break;
-	case (nvme_cmd_write | nvme_cmd_hrp):
-	case (nvme_cmd_read | nvme_cmd_hrp):
+	case (nvme_cmd_write | nvme_cmd_sode):
+	case (nvme_cmd_read | nvme_cmd_sode):
 		ret->nsecs_target = __schedule_io_units(
 			cmd->common.opcode, cmd->rw.slba,
 			__cmd_io_size((struct nvme_rw_command *)cmd), __get_wallclock());

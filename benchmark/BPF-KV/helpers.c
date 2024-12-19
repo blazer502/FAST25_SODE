@@ -40,7 +40,7 @@ int get_leaf_containing(int database_fd, key__t key, Node *node, ptr__t index_of
     return _get_leaf_containing(database_fd, key, node, index_offset, &x);
 }
 
-long lookup_bpf(bool is_hrp, int db_fd, int bpf_fd, struct Query *query, ptr__t index_offset) {
+long lookup_bpf(bool is_sode, int db_fd, int bpf_fd, struct Query *query, ptr__t index_offset) {
     /* Set up buffers and query */
     char *buf = (char *) aligned_alloca(0x1000, 0x1000);
     char *scratch = (char *) aligned_alloca(0x1000, SCRATCH_SIZE);
@@ -53,8 +53,8 @@ long lookup_bpf(bool is_hrp, int db_fd, int bpf_fd, struct Query *query, ptr__t 
 
     /* Syscall to invoke BPF function that we loaded out-of-band previously */
     long ret;
-    if (is_hrp) {
-        ret = syscall(SYS_READ_HRP, db_fd, buf, BLK_SIZE, index_offset, bpf_fd, scratch);
+    if (is_sode) {
+        ret = syscall(SYS_READ_SODE, db_fd, buf, BLK_SIZE, index_offset, bpf_fd, scratch);
     }
     else {
         ret = syscall(SYS_READ_XRP, db_fd, buf, BLK_SIZE, index_offset, bpf_fd, scratch);
@@ -136,15 +136,15 @@ long calculate_max_key(unsigned int layers) {
     return result - 1;
 }
 
-int load_bpf_program(bool is_hrp, char *path) {
+int load_bpf_program(bool is_sode, char *path) {
     struct bpf_object *obj;
     int ret, progfd;
 
-    if (!is_hrp) {
+    if (!is_sode) {
         ret = bpf_prog_load(path, BPF_PROG_TYPE_XRP, &obj, &progfd);
     }
     else {
-        ret = bpf_prog_load(path, BPF_PROG_TYPE_HRP, &obj, &progfd);
+        ret = bpf_prog_load(path, BPF_PROG_TYPE_SODE, &obj, &progfd);
     }
 
     if (ret) {

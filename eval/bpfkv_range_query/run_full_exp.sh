@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -10,7 +10,7 @@ EVAL_PATH=`dirname $SCRIPT_PATH`
 BASE_DIR=`realpath $EVAL_PATH/../..`
 BPFKV_PATH="$BASE_DIR/benchmark/BPF-KV"
 UTILS_PATH="$BASE_DIR/utils"
-MOUNT_POINT="/mnt/hrp"
+MOUNT_POINT="/mnt/sode"
 DB_PATH="$MOUNT_POINT/bpfkv_test_db"
 
 DEV_NAME="/dev/nvme0n1"
@@ -46,8 +46,8 @@ printf "Creating a BPF-KV database file with $LAYER layers of index...\n"
 sudo numactl --membind=0 --cpunodebind=0 ./simplekv $DB_PATH $LAYER create
 
 for RANGE_LEN in $(seq 1 5 100); do
-    printf "Evaluating BPF-KV with range lookup (size: $RANGE_LEN) and HRP...\n"
-    sudo numactl --membind=0 --cpunodebind=0 ./simplekv $DB_PATH $LAYER range --requests=$NUM_OPS --range-size=$RANGE_LEN --use-hrp | tee $EVAL_PATH/result/$RANGE_LEN-range-hrp.txt
+    printf "Evaluating BPF-KV with range lookup (size: $RANGE_LEN) and SODE...\n"
+    sudo numactl --membind=0 --cpunodebind=0 ./simplekv $DB_PATH $LAYER range --requests=$NUM_OPS --range-size=$RANGE_LEN --use-sode | tee $EVAL_PATH/result/$RANGE_LEN-range-sode.txt
 
     printf "Evaluating BPF-KV with range lookup (size: $RANGE_LEN) and XRP...\n"
     sudo numactl --membind=0 --cpunodebind=0 ./simplekv $DB_PATH $LAYER range --requests=$NUM_OPS --range-size=$RANGE_LEN --use-xrp | tee $EVAL_PATH/result/$RANGE_LEN-range-xrp.txt

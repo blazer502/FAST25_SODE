@@ -320,7 +320,7 @@ struct nvme_reservation_status {
 	op(nvme_cmd_zone_mgmt_send, 0x79)	\
 	op(nvme_cmd_zone_mgmt_recv, 0x7a)	\
 	op(nvme_cmd_zone_append, 0x7d) \
-	op(nvme_cmd_hrp, 0x80) \
+	op(nvme_cmd_sode, 0x80) \
 	op(nvme_cmd_kv_store, 0x81) \
 	op(nvme_cmd_kv_append, 0x83) \
 	op(nvme_cmd_kv_retrieve, 0x90) \

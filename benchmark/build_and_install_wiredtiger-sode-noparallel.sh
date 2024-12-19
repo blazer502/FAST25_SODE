@@ -4,7 +4,7 @@
 
 SCRIPT_PATH=`realpath $0`
 BASE_DIR=`dirname $SCRIPT_PATH`
-WT_PATH="$BASE_DIR/wiredtiger-hrp"
+WT_PATH="$BASE_DIR/wiredtiger-sode-noparallel"
 
 # Build WiredTiger
 pushd $WT_PATH

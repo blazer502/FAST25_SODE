@@ -23,22 +23,22 @@ int do_get_cmd(int argc, char *argv[], struct ArgState *as) {
     if (ga.xrp) {
         bpf_fd = load_bpf_program(false, "xrp-bpf/get.o");
     }
-    else if (ga.hrp) {
-        bpf_fd = load_bpf_program(true, "hrp-bpf/get.o");
+    else if (ga.sode) {
+        bpf_fd = load_bpf_program(true, "sode-bpf/get.o");
     }
 
     if (ga.key_set) {
-        return lookup_single_key(as->filename, ga.key, ga.xrp, ga.hrp, bpf_fd);
+        return lookup_single_key(as->filename, ga.key, ga.xrp, ga.sode, bpf_fd);
     }
 
-    return run(as->filename, as->layers, ga.requests, ga.threads, ga.xrp, ga.hrp, bpf_fd, ga.cache_level);
+    return run(as->filename, as->layers, ga.requests, ga.threads, ga.xrp, ga.sode, bpf_fd, ga.cache_level);
 }
 
 
 
-int lookup_single_key(char *filename, long key, int use_xrp, int use_hrp, int bpf_fd) {
+int lookup_single_key(char *filename, long key, int use_xrp, int use_sode, int bpf_fd) {
     /* Lookup Single Key */
-    char *value = grab_value(filename, key, use_xrp, use_hrp, bpf_fd, ROOT_NODE_OFFSET);
+    char *value = grab_value(filename, key, use_xrp, use_sode, bpf_fd, ROOT_NODE_OFFSET);
     printf("Key: %ld\n", key);
     if (value == NULL) {
         printf("Value not found\n");
@@ -53,7 +53,7 @@ int lookup_single_key(char *filename, long key, int use_xrp, int use_hrp, int bp
     return 0;
 }
 
-char *grab_value(char *file_name, unsigned long const key, int use_xrp, int use_hrp, int bpf_fd, ptr__t index_offset) {
+char *grab_value(char *file_name, unsigned long const key, int use_xrp, int use_sode, int bpf_fd, ptr__t index_offset) {
     char *const retval = malloc(sizeof(val__t) + 1);
     if (retval == NULL) {
         perror("malloc");
@@ -64,7 +64,7 @@ char *grab_value(char *file_name, unsigned long const key, int use_xrp, int use_
 
     /* Open the database */
     int flags = O_RDONLY;
-    if (use_xrp || use_hrp) {
+    if (use_xrp || use_sode) {
         flags = flags | O_DIRECT;
     }
     int db_fd = open(file_name, flags);
@@ -74,12 +74,12 @@ char *grab_value(char *file_name, unsigned long const key, int use_xrp, int use_
     }
 
     struct Query query = new_query(key);
-    if (use_xrp || use_hrp) {
-        long ret = lookup_bpf(use_hrp, db_fd, bpf_fd, &query, index_offset);
+    if (use_xrp || use_sode) {
+        long ret = lookup_bpf(use_sode, db_fd, bpf_fd, &query, index_offset);
 
         if (ret < 0) {
             printf("reached leaf? %ld\n", query.state_flags);
-            fprintf(stderr, "read xrp or hrp failed with code %d\n", errno);
+            fprintf(stderr, "read xrp or sode failed with code %d\n", errno);
             fprintf(stderr, "%s\n", strerror(errno));
             exit(errno);
         }

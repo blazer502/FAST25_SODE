@@ -589,7 +589,7 @@ static void __nvmev_proc_admin_req(int entry_id)
 	case nvme_admin_async_event:
 		__nvmev_admin_async_event(entry_id);
 		break;
-    case nvme_cmd_hrp:
+    case nvme_cmd_sode:
         base = kmap_atomic_pfn(PHYS_PFN(sqe->rw.rsvd2));
         on_meta = (struct resubmit_data *)((u64)base + (sqe->rw.rsvd2 & ~PAGE_MASK));
         on_meta->status = 0;

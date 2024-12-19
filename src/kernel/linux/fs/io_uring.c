@@ -877,7 +877,7 @@ static const struct io_op_def io_op_defs[] = {
 		.plug			= 1,
 		.async_size		= sizeof(struct io_async_rw),
 	},
-	[IORING_OP_READ_HRP] = {
+	[IORING_OP_READ_SODE] = {
 		.needs_file		= 1,
 		.unbound_nonreg_file	= 1,
 		.pollin			= 1,
@@ -886,7 +886,7 @@ static const struct io_op_def io_op_defs[] = {
 		.plug			= 1,
 		.async_size		= sizeof(struct io_async_rw),
     },
-	[IORING_OP_READ_HRP_PARALLEL] = {
+	[IORING_OP_READ_SODE_PARALLEL] = {
 		.needs_file		= 1,
 		.unbound_nonreg_file	= 1,
 		.pollin			= 1,
@@ -2471,10 +2471,10 @@ static bool io_resubmit_prep(struct io_kiocb *req)
 	case IORING_OP_READ_XRP:
 		rw = READ;
 		break;
-	case IORING_OP_READ_HRP:
+	case IORING_OP_READ_SODE:
 		rw = READ;
 		break;
-	case IORING_OP_READ_HRP_PARALLEL:
+	case IORING_OP_READ_SODE_PARALLEL:
 		rw = READ;
 		break;
 	case IORING_OP_WRITEV:
@@ -2765,22 +2765,22 @@ static int io_prep_rw(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	}
 	if (sqe->opcode == IORING_OP_READ_XRP) {
 		kiocb->xrp_enabled = true;
-		kiocb->hrp_enabled = false;
-        kiocb->hrp_parallel = false;
+		kiocb->sode_enabled = false;
+        kiocb->sode_parallel = false;
 		kiocb->xrp_scratch_buf = (char __user *) sqe->scratch;
 		kiocb->xrp_bpf_fd = (unsigned int) sqe->bpf_fd;
 	}
-	if (sqe->opcode == IORING_OP_READ_HRP) {
+	if (sqe->opcode == IORING_OP_READ_SODE) {
 		kiocb->xrp_enabled = false;
-		kiocb->hrp_enabled = true;
-        kiocb->hrp_parallel = false;
+		kiocb->sode_enabled = true;
+        kiocb->sode_parallel = false;
 		kiocb->xrp_scratch_buf = (char __user *) sqe->scratch;
 		kiocb->xrp_bpf_fd = (unsigned int) sqe->bpf_fd;
 	}
-    else if (sqe->opcode == IORING_OP_READ_HRP_PARALLEL) {
+    else if (sqe->opcode == IORING_OP_READ_SODE_PARALLEL) {
 		kiocb->xrp_enabled = false;
-		kiocb->hrp_enabled = true;
-        kiocb->hrp_parallel = true;
+		kiocb->sode_enabled = true;
+        kiocb->sode_parallel = true;
 		kiocb->xrp_scratch_buf = (char __user *) sqe->scratch;
 		kiocb->xrp_bpf_fd = (unsigned int) sqe->bpf_fd;
     }
@@ -5876,9 +5876,9 @@ static int io_req_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	case IORING_OP_READ:
 	case IORING_OP_READ_XRP:
 		return io_read_prep(req, sqe);
-	case IORING_OP_READ_HRP:
+	case IORING_OP_READ_SODE:
 		return io_read_prep(req, sqe);
-	case IORING_OP_READ_HRP_PARALLEL:
+	case IORING_OP_READ_SODE_PARALLEL:
 		return io_read_prep(req, sqe);
 	case IORING_OP_WRITEV:
 	case IORING_OP_WRITE_FIXED:
@@ -5957,9 +5957,9 @@ static int io_req_prep_async(struct io_kiocb *req)
 	case IORING_OP_READ:
 	case IORING_OP_READ_XRP:
 		return io_rw_prep_async(req, READ);
-	case IORING_OP_READ_HRP:
+	case IORING_OP_READ_SODE:
 		return io_rw_prep_async(req, READ);
-	case IORING_OP_READ_HRP_PARALLEL:
+	case IORING_OP_READ_SODE_PARALLEL:
 		return io_rw_prep_async(req, READ);
 	case IORING_OP_WRITEV:
 	case IORING_OP_WRITE_FIXED:
@@ -6053,10 +6053,10 @@ static void __io_clean_op(struct io_kiocb *req)
 		case IORING_OP_READ_XRP:
 			kfree((void *)(unsigned long)req->rw.addr);
 			break;
-		case IORING_OP_READ_HRP:
+		case IORING_OP_READ_SODE:
 			kfree((void *)(unsigned long)req->rw.addr);
 			break;
-		case IORING_OP_READ_HRP_PARALLEL:
+		case IORING_OP_READ_SODE_PARALLEL:
 			kfree((void *)(unsigned long)req->rw.addr);
 			break;
 		case IORING_OP_RECVMSG:
@@ -6073,8 +6073,8 @@ static void __io_clean_op(struct io_kiocb *req)
 		case IORING_OP_READ_FIXED:
 		case IORING_OP_READ:
 		case IORING_OP_READ_XRP:
-		case IORING_OP_READ_HRP:
-		case IORING_OP_READ_HRP_PARALLEL:
+		case IORING_OP_READ_SODE:
+		case IORING_OP_READ_SODE_PARALLEL:
 		case IORING_OP_WRITEV:
 		case IORING_OP_WRITE_FIXED:
 		case IORING_OP_WRITE: {
@@ -6131,10 +6131,10 @@ static int io_issue_sqe(struct io_kiocb *req, unsigned int issue_flags)
 	case IORING_OP_READ_XRP:
 		ret = io_read(req, issue_flags);
 		break;
-	case IORING_OP_READ_HRP:
+	case IORING_OP_READ_SODE:
 		ret = io_read(req, issue_flags);
 		break;
-	case IORING_OP_READ_HRP_PARALLEL:
+	case IORING_OP_READ_SODE_PARALLEL:
 		ret = io_read(req, issue_flags);
 		break;
 	case IORING_OP_WRITEV:

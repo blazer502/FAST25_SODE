@@ -923,7 +923,7 @@ static blk_status_t nvme_queue_rq(struct blk_mq_hw_ctx *hctx,
 	struct nvme_command cmnd, *cmndp;
 	blk_status_t ret;
 
-	if (req->bio && (req->bio->xrp_enabled || req->bio->hrp_enabled)) {
+	if (req->bio && (req->bio->xrp_enabled || req->bio->sode_enabled)) {
 		cmndp = kmalloc(sizeof(struct nvme_command), GFP_NOWAIT);
 		if (!cmndp) {
 			printk("nvme_queue_rq: failed to allocate struct nvme_command\n");
@@ -964,9 +964,9 @@ static blk_status_t nvme_queue_rq(struct blk_mq_hw_ctx *hctx,
 			goto out_unmap_data;
 	}
 
-	if (req->bio && req->bio->hrp_enabled) {
+	if (req->bio && req->bio->sode_enabled) {
 		cmndp->rw.rsvd2 = (__u64)alloc_resubmit_req(req, dev);
-		cmndp->common.opcode |= nvme_cmd_hrp;
+		cmndp->common.opcode |= nvme_cmd_sode;
 	}
 
 	blk_mq_start_request(req);
@@ -1113,7 +1113,7 @@ int fake_cmd_thread(void *data)
     nvmeq = &dev->queues[0];
 
     memset(&fake_cmd, 0, sizeof(fake_cmd));
-    fake_cmd.common.opcode = nvme_cmd_hrp;
+    fake_cmd.common.opcode = nvme_cmd_sode;
     fake_cmd.common.command_id = 7;
 
     req = (struct resubmit_data *)alloc_pages_exact(PAGE_SIZE, GFP_KERNEL);
@@ -1187,7 +1187,7 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 
     trace_nvme_sq(req, cqe->sq_head, nvmeq->sq_tail);
 
-	if (!req->bio || (!req->bio->hrp_enabled && !req->bio->xrp_enabled)) {
+	if (!req->bio || (!req->bio->sode_enabled && !req->bio->xrp_enabled)) {
 		/* normal completion path */
 		if (!nvme_try_complete_req(req, cqe->status, cqe->result))
 			nvme_pci_complete_rq(req);
@@ -1706,7 +1706,7 @@ static enum blk_eh_timer_return nvme_timeout(struct request *req, bool reserved)
 	struct nvme_command cmd;
 	u32 csts = readl(dev->bar + NVME_REG_CSTS);
 
-    if (req->bio && req->bio->hrp_enabled) {
+    if (req->bio && req->bio->sode_enabled) {
 		return BLK_EH_RESET_TIMER;
 		//return BLK_EH_DONE;
     }

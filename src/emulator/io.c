@@ -126,7 +126,7 @@ static unsigned int __do_perform_io(int sqid, int sq_entry, struct nvmev_io_work
 	u64 *paddr_list = NULL;
 	size_t nsid = cmd->nsid - 1; // 0-based
 
-    if (w->is_hrp) {
+    if (w->is_sode) {
         offset = w->slba << 9;
     }
     else {
@@ -140,7 +140,7 @@ static unsigned int __do_perform_io(int sqid, int sq_entry, struct nvmev_io_work
 		void *vaddr;
 		size_t mem_offs = 0;
 
-        if (!w->is_hrp || w->paddr_cache == 0) {
+        if (!w->is_sode || w->paddr_cache == 0) {
             prp_offs++;
             if (prp_offs == 1) {
                 paddr = cmd->prp1;
@@ -175,9 +175,9 @@ static unsigned int __do_perform_io(int sqid, int sq_entry, struct nvmev_io_work
 			memcpy(nvmev_vdev->ns[nsid].mapped + offset, vaddr + mem_offs, io_size);
 		} else if (cmd->opcode == nvme_cmd_read) {
 			memcpy(vaddr + mem_offs, nvmev_vdev->ns[nsid].mapped + offset, io_size);
-		} else if (cmd->opcode == (nvme_cmd_read | nvme_cmd_hrp)) {
+		} else if (cmd->opcode == (nvme_cmd_read | nvme_cmd_sode)) {
             memcpy(vaddr + mem_offs, nvmev_vdev->ns[nsid].mapped + offset, io_size);
-		} else if (cmd->opcode == (nvme_cmd_write | nvme_cmd_hrp)) {
+		} else if (cmd->opcode == (nvme_cmd_write | nvme_cmd_sode)) {
 			memcpy(nvmev_vdev->ns[nsid].mapped + offset, vaddr + mem_offs, io_size);
 		}
 
@@ -283,9 +283,9 @@ static unsigned int __do_perform_io_using_dma(int sqid, int sq_entry)
 			ioat_dma_submit(paddr, nvmev_vdev->config.storage_start + offset, io_size);
 		} else if (cmd->opcode == nvme_cmd_read) {
 			ioat_dma_submit(nvmev_vdev->config.storage_start + offset, paddr, io_size);
-		} else if (cmd->opcode == (nvme_cmd_read | nvme_cmd_hrp)) {
+		} else if (cmd->opcode == (nvme_cmd_read | nvme_cmd_sode)) {
 			ioat_dma_submit(nvmev_vdev->config.storage_start + offset, paddr, io_size);
-		} else if (cmd->opcode == (nvme_cmd_write | nvme_cmd_hrp)) {
+		} else if (cmd->opcode == (nvme_cmd_write | nvme_cmd_sode)) {
 			ioat_dma_submit(paddr, nvmev_vdev->config.storage_start + offset, io_size);
 		}
 
@@ -398,18 +398,18 @@ static int __enqueue_io_req(int sqid, int cqid, int sq_entry, unsigned long long
 		    sq_entry(sq_entry).rw.opcode, sqid, cqid, sq_entry, nsecs_start,
 		    ret->nsecs_target - nsecs_start);
 
-    if (sq_entry(sq_entry).rw.opcode & nvme_cmd_hrp) {
+    if (sq_entry(sq_entry).rw.opcode & nvme_cmd_sode) {
         phys_addr_t phys = (phys_addr_t)sq_entry(sq_entry).rw.rsvd2;
         void *base = kmap_atomic_pfn(PHYS_PFN(phys));
         w->on_meta = (struct resubmit_data *)base;
         w->slba = atomic64_read(&w->on_meta->slba);
-        w->is_hrp = true;
+        w->is_sode = true;
 
     }
     else {
         w->on_meta = 0;
         w->slba = 0;
-        w->is_hrp = false;
+        w->is_sode = false;
     }
 
 	/////////////////////////////////
@@ -2413,7 +2413,7 @@ static int nvmev_io_worker(void *data)
 			}
             
 			if (w->nsecs_target <= curr_nsecs) {
-                if (w->is_hrp && atomic_read(&w->is_resubmit) == false) {
+                if (w->is_sode && atomic_read(&w->is_resubmit) == false) {
                     int subtask_idx;
                     struct nvmev_io_worker *other_worker;
                     struct resubmit_data *on_meta;

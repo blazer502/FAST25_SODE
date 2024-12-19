@@ -2353,13 +2353,13 @@ wiredtiger_open(const char *home, WT_EVENT_HANDLER *event_handler, const char *c
 
     bpf_env = getenv("WT_BPF_PATH");
     if (bpf_env != NULL) {
-        bpf_ret = bpf_prog_load(bpf_env, BPF_PROG_TYPE_HRP, &obj, &bpf_fd);
+        bpf_ret = bpf_prog_load(bpf_env, BPF_PROG_TYPE_SODE, &obj, &bpf_fd);
         if (bpf_ret) {
             printf("Failed to load BPF program\n");
             exit(1);
         }
     } else {
-        printf("WT_BPF_PATH is not specified. HRP is disabled.\n");
+        printf("WT_BPF_PATH is not specified. SODE is disabled.\n");
         bpf_fd = -1;
     }
 

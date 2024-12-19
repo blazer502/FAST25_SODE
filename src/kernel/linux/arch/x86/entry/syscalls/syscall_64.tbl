@@ -367,9 +367,9 @@
 
 444	common	print_xrp_stats		sys_print_xrp_stats
 445	common	read_xrp	        sys_read_xrp
-446	common	read_hrp		    sys_read_hrp
-447	common	read_hrp_parallel	        sys_read_hrp_parallel
-448	common	test_xrp		sys_test_xrp
+446	common	read_sode		    sys_read_sode
+447	common	read_sode_parallel  sys_read_sode_parallel
+448	common	test_xrp		    sys_test_xrp
 
 #
 # Due to a historical design error, certain syscalls are numbered differently

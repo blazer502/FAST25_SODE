@@ -429,8 +429,8 @@ static ssize_t new_sync_read_xrp(struct file *filp, char __user *data_buf, size_
 	init_sync_kiocb(&kiocb, filp);
 	kiocb.ki_pos = (ppos ? *ppos : 0);
 	kiocb.xrp_enabled = true;
-    kiocb.hrp_enabled = false;
-    kiocb.hrp_parallel = false;
+    kiocb.sode_enabled = false;
+    kiocb.sode_parallel = false;
 	kiocb.xrp_scratch_buf = scratch_buf;
 	kiocb.xrp_bpf_fd = bpf_fd;
 	iov_iter_init(&iter, READ, &iov, 1, len);
@@ -442,7 +442,7 @@ static ssize_t new_sync_read_xrp(struct file *filp, char __user *data_buf, size_
 	return ret;
 }
 
-static ssize_t new_sync_read_hrp(struct file *filp, char __user *data_buf, size_t len, loff_t *ppos, unsigned int bpf_fd, char __user *scratch_buf)
+static ssize_t new_sync_read_sode(struct file *filp, char __user *data_buf, size_t len, loff_t *ppos, unsigned int bpf_fd, char __user *scratch_buf)
 {
 	struct iovec iov = { .iov_base = data_buf, .iov_len = len };
 	struct kiocb kiocb;
@@ -452,8 +452,8 @@ static ssize_t new_sync_read_hrp(struct file *filp, char __user *data_buf, size_
 	init_sync_kiocb(&kiocb, filp);
 	kiocb.ki_pos = (ppos ? *ppos : 0);
 	kiocb.xrp_enabled = false;
-	kiocb.hrp_enabled = true;
-    kiocb.hrp_parallel = false;
+	kiocb.sode_enabled = true;
+    kiocb.sode_parallel = false;
 	kiocb.xrp_scratch_buf = scratch_buf;
 	kiocb.xrp_bpf_fd = bpf_fd;
 	iov_iter_init(&iter, READ, &iov, 1, len);
@@ -465,7 +465,7 @@ static ssize_t new_sync_read_hrp(struct file *filp, char __user *data_buf, size_
 	return ret;
 }
 
-static ssize_t new_sync_read_hrp_parallel(struct file *filp, char __user *data_buf, size_t len, loff_t *ppos, unsigned int bpf_fd, char __user *scratch_buf)
+static ssize_t new_sync_read_sode_parallel(struct file *filp, char __user *data_buf, size_t len, loff_t *ppos, unsigned int bpf_fd, char __user *scratch_buf)
 {
 	struct iovec iov = { .iov_base = data_buf, .iov_len = len };
 	struct kiocb kiocb;
@@ -475,8 +475,8 @@ static ssize_t new_sync_read_hrp_parallel(struct file *filp, char __user *data_b
 	init_sync_kiocb(&kiocb, filp);
 	kiocb.ki_pos = (ppos ? *ppos : 0);
 	kiocb.xrp_enabled = false;
-	kiocb.hrp_enabled = true;
-    kiocb.hrp_parallel = true;
+	kiocb.sode_enabled = true;
+    kiocb.sode_parallel = true;
 	kiocb.xrp_scratch_buf = scratch_buf;
 	kiocb.xrp_bpf_fd = bpf_fd;
 	iov_iter_init(&iter, READ, &iov, 1, len);
@@ -606,7 +606,7 @@ ssize_t vfs_read_xrp(struct file *file, char __user *data_buf, size_t count, lof
 	return ret;
 }
 
-ssize_t vfs_read_hrp(struct file *file, char __user *data_buf, size_t count, loff_t *pos, unsigned int bpf_fd, char __user *scratch_buf)
+ssize_t vfs_read_sode(struct file *file, char __user *data_buf, size_t count, loff_t *pos, unsigned int bpf_fd, char __user *scratch_buf)
 {
 	ssize_t ret;
 
@@ -628,7 +628,7 @@ ssize_t vfs_read_hrp(struct file *file, char __user *data_buf, size_t count, lof
 	if (file->f_op->read)
 		ret = file->f_op->read(file, data_buf, count, pos);
 	else if (file->f_op->read_iter)
-		ret = new_sync_read_hrp(file, data_buf, count, pos, bpf_fd, scratch_buf);
+		ret = new_sync_read_sode(file, data_buf, count, pos, bpf_fd, scratch_buf);
 	else
 		ret = -EINVAL;
 	if (ret > 0) {
@@ -639,7 +639,7 @@ ssize_t vfs_read_hrp(struct file *file, char __user *data_buf, size_t count, lof
 	return ret;
 }
 
-ssize_t vfs_read_hrp_parallel(struct file *file, char __user *data_buf, size_t count, loff_t *pos, unsigned int bpf_fd, char __user *scratch_buf)
+ssize_t vfs_read_sode_parallel(struct file *file, char __user *data_buf, size_t count, loff_t *pos, unsigned int bpf_fd, char __user *scratch_buf)
 {
 	ssize_t ret;
 
@@ -661,7 +661,7 @@ ssize_t vfs_read_hrp_parallel(struct file *file, char __user *data_buf, size_t c
 	if (file->f_op->read)
 		ret = file->f_op->read(file, data_buf, count, pos);
 	else if (file->f_op->read_iter)
-		ret = new_sync_read_hrp_parallel(file, data_buf, count, pos, bpf_fd, scratch_buf);
+		ret = new_sync_read_sode_parallel(file, data_buf, count, pos, bpf_fd, scratch_buf);
 	else
 		ret = -EINVAL;
 	if (ret > 0) {
@@ -878,7 +878,7 @@ ssize_t ksys_read_xrp(unsigned int fd, char __user *data_buf,
 	return ret;
 }
 
-ssize_t ksys_read_hrp(unsigned int fd, char __user *data_buf,
+ssize_t ksys_read_sode(unsigned int fd, char __user *data_buf,
                       size_t count, loff_t pos, unsigned int bpf_fd, char __user *scratch_buf)
 {
 	struct fd f;
@@ -891,14 +891,14 @@ ssize_t ksys_read_hrp(unsigned int fd, char __user *data_buf,
 	if (f.file) {
 		ret = -ESPIPE;
 		if (f.file->f_mode & FMODE_PREAD)
-			ret = vfs_read_hrp(f.file, data_buf, count, &pos, bpf_fd, scratch_buf);
+			ret = vfs_read_sode(f.file, data_buf, count, &pos, bpf_fd, scratch_buf);
 		fdput(f);
 	}
 
 	return ret;
 }
 
-ssize_t ksys_read_hrp_parallel(unsigned int fd, char __user *data_buf,
+ssize_t ksys_read_sode_parallel(unsigned int fd, char __user *data_buf,
                       size_t count, loff_t pos, unsigned int bpf_fd, char __user *scratch_buf)
 {
 	struct fd f;
@@ -911,7 +911,7 @@ ssize_t ksys_read_hrp_parallel(unsigned int fd, char __user *data_buf,
 	if (f.file) {
 		ret = -ESPIPE;
 		if (f.file->f_mode & FMODE_PREAD)
-			ret = vfs_read_hrp_parallel(f.file, data_buf, count, &pos, bpf_fd, scratch_buf);
+			ret = vfs_read_sode_parallel(f.file, data_buf, count, &pos, bpf_fd, scratch_buf);
 		fdput(f);
 	}
 
@@ -938,7 +938,7 @@ SYSCALL_DEFINE6(read_xrp, unsigned int, fd, char __user *, data_buf,
 	return ksys_read_xrp(fd, data_buf, count, pos, bpf_fd, scratch_buf);
 }
 
-SYSCALL_DEFINE6(read_hrp, unsigned int, fd, char __user *, data_buf,
+SYSCALL_DEFINE6(read_sode, unsigned int, fd, char __user *, data_buf,
 			size_t, count, loff_t, pos, unsigned int, bpf_fd, char __user *, scratch_buf)
 {
 	if ((((uint64_t) data_buf) & (PAGE_SIZE - 1)) != 0) {
@@ -949,10 +949,10 @@ SYSCALL_DEFINE6(read_hrp, unsigned int, fd, char __user *, data_buf,
 		printk("read_xrp: scratch buffer is not 4KB aligned\n");
 		return -EINVAL;
 	}
-	return ksys_read_hrp(fd, data_buf, count, pos, bpf_fd, scratch_buf);
+	return ksys_read_sode(fd, data_buf, count, pos, bpf_fd, scratch_buf);
 }
 
-SYSCALL_DEFINE6(read_hrp_parallel, unsigned int, fd, char __user *, data_buf,
+SYSCALL_DEFINE6(read_sode_parallel, unsigned int, fd, char __user *, data_buf,
 			size_t, count, loff_t, pos, unsigned int, bpf_fd, char __user *, scratch_buf)
 {
 	if ((((uint64_t) data_buf) & (PAGE_SIZE - 1)) != 0) {
@@ -963,7 +963,7 @@ SYSCALL_DEFINE6(read_hrp_parallel, unsigned int, fd, char __user *, data_buf,
 		printk("read_xrp: scratch buffer is not 4KB aligned\n");
 		return -EINVAL;
 	}
-	return ksys_read_hrp_parallel(fd, data_buf, count, pos, bpf_fd, scratch_buf);
+	return ksys_read_sode_parallel(fd, data_buf, count, pos, bpf_fd, scratch_buf);
 }
 
 ssize_t ksys_pwrite64(unsigned int fd, const char __user *buf,

@@ -20,7 +20,7 @@ struct GetArgs {
     /* Flags */
     int key_set;
     int xrp;
-    int hrp;
+    int sode;
 
     int threads;
     int requests;
@@ -31,7 +31,7 @@ struct GetArgs {
 struct RangeArgs {
     int dump_flag;
     int xrp;
-    int hrp;
+    int sode;
     unsigned long range_begin;
     unsigned long range_end;
     long requests;

@@ -1,6 +1,6 @@
-if [ "$(uname -r)" !=  "5.12.0-hrp" ]; then
-    printf "Not in HRP kernel. Please run the following commands to boot into HRP kernel:\n"
-    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-hrp\"\n"
+if [ "$(uname -r)" !=  "5.12.0-sode" ]; then
+    printf "Not in SODE kernel. Please run the following commands to boot into SODE kernel:\n"
+    printf "    sudo grub-reboot \"Advanced options for Ubuntu>Ubuntu, with Linux 5.12.0-sode\"\n"
     printf "    sudo reboot\n"
     exit 1
 fi
@@ -8,12 +8,12 @@ fi
 SCRIPT_PATH=`realpath $0`
 EVAL_PATH=`dirname $SCRIPT_PATH`
 BASE_DIR=`realpath $EVAL_PATH/../..`
-WT_PATH="$BASE_DIR/benchmark/wiredtiger-hrp"
+WT_PATH="$BASE_DIR/benchmark/wiredtiger-sode"
 YCSB_PATH="$BASE_DIR/benchmark/My-YCSB"
 TRACE_PATH="$YCSB_PATH/build/trace"
 TRACE_GENERATOR_PATH="$YCSB_PATH/script/zipfian_trace.py"
 UTILS_PATH="$BASE_DIR/utils"
-MOUNT_POINT="/mnt/hrp"
+MOUNT_POINT="/mnt/sode"
 DB_PATH="$MOUNT_POINT/tigerhome"
 CACHED_DB_PATH="/tigerhome"
 CACHED_TRACE_PATH="/zipfian_trace"
@@ -29,7 +29,7 @@ if [ ! -z $1 ]; then
 fi
 
 pushd $BASE_DIR/benchmark
-./build_and_install_wiredtiger-hrp.sh 1> /dev/null 2> /dev/null
+./build_and_install_wiredtiger-sode.sh 1> /dev/null 2> /dev/null
 ./build_and_install_ycsb.sh 1> /dev/null 2> /dev/null
 popd
 
@@ -123,8 +123,8 @@ for ZIPF in 0 0.6 0.7 0.8 0.9 0.99 1.1 1.2 1.3 1.4 1.5 1.6; do
 
     # Run with XRP
     export WT_BPF_PATH="$WT_PATH/bpf_prog/wt_bpf.o"
-    printf "Evaluating WiredTiger with ZIPF=$ZIPF and HRP...\n"
-    sudo -E numactl --membind=0 --cpunodebind=0 ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$ZIPF-zipf-hrp.txt
+    printf "Evaluating WiredTiger with ZIPF=$ZIPF and SODE...\n"
+    sudo -E numactl --membind=0 --cpunodebind=0 ./run_wt $YCSB_CONFIG_PATH | tee $EVAL_PATH/result/$ZIPF-zipf-sode.txt
 done
 popd
 
