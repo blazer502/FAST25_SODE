@@ -129,12 +129,12 @@ Second, build and install WiredTiger and My-YCSB:
 ```
 cd benchmark/
 ./build_and_install_wiredtiger.sh
-./build_and_install_wiredtiger-hrp.sh
-./build_and_install_wiredtiger-hrp-noparallel.sh
+./build_and_install_wiredtiger-sode.sh
+./build_and_install_wiredtiger-sode-noparallel.sh
 ./build_and_install_ycsb.sh
 ```
 
-Lastly, you can check the functionality of HRP on BPF-KV and WiredTiger:
+Lastly, you can check the functionality of SODE on BPF-KV and WiredTiger:
 ```
 cd eval/test/
 ./test_bpfkv.sh
@@ -150,10 +150,10 @@ cd eval/
 
 #### Generate Figures
 
-Simply use `generate.sh`.
+Simply use `figure.sh` after running all benchmarks.
 ```
 cd eval/
-./generate.sh
+./figure.sh
 ```
 
 Here is a list of the key results in this paper:
@@ -175,8 +175,6 @@ Here is a list of the key results in this paper:
 * Figure 13: Normalized throughput of WiredTiger on YCSB-C
 * Appendix Figure 2: Throughput of WiredTiger for varying cache sizes
 
-#### Optional Comment
-We apologize for the inconvenience caused by the code name of our project at the time of development being `HRP`. In our implementation, the keyword is HRP, not SODE. For example, you can find `read_hrp` instead of `read_sode`.
 
 ## Authors
 - Chanyoung Park (UNIST)    chanyoung@unist.ac.kr
