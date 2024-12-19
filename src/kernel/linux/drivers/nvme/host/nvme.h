@@ -863,7 +863,8 @@ struct resubmit_data {
 	char *xrp_data_page;
 	char *xrp_scratch_page;
 
-    atomic64_t slba;
+    u64 slba;
+
 	int status;
     //char padding1[4];
 
@@ -890,8 +891,6 @@ struct resubmit_data {
     int previous_complete_counter;
     u64 xrp_ebpf_time;
 
-    atomic64_t subtask_file_offset[4];
-    atomic_t subtask_result[4]; // will atomic type
     u64 *subtask_scratch[4];
 
     u64 is_parallel;
@@ -901,6 +900,5 @@ struct resubmit_data {
 
 phys_addr_t alloc_resubmit_req(struct request *req, void *dev);
 void free_resubmit_req(struct resubmit_data *data, struct request *req);
-int fake_cmd_thread(void *data);
 
 #endif /* _NVME_H */

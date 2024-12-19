@@ -402,9 +402,8 @@ static int __enqueue_io_req(int sqid, int cqid, int sq_entry, unsigned long long
         phys_addr_t phys = (phys_addr_t)sq_entry(sq_entry).rw.rsvd2;
         void *base = kmap_atomic_pfn(PHYS_PFN(phys));
         w->on_meta = (struct resubmit_data *)base;
-        w->slba = atomic64_read(&w->on_meta->slba);
+        w->slba = w->on_meta->slba;
         w->is_sode = true;
-
     }
     else {
         w->on_meta = 0;
@@ -422,8 +421,6 @@ static int __enqueue_io_req(int sqid, int cqid, int sq_entry, unsigned long long
 	w->nsecs_target = ret->nsecs_target;
 	w->status = ret->status;
     w->is_copied = false;
-
-    atomic_set(&w->is_resubmit, 0);
 
 	w->prev = -1;
 	w->next = -1;
@@ -478,14 +475,6 @@ static void __reclaim_completed_reqs_force(void)
         struct nvmev_io_worker *worker;
         struct nvmev_io_work *w;
 
-        worker = &nvmev_vdev->io_workers[turn];
-
-        if (worker->working_signal) {
-            continue;
-        }
-
-        worker->working_signal = true;
-
         unsigned int first_free_seq = -1;
         unsigned int first_io_seq = -1;
 
@@ -495,11 +484,18 @@ static void __reclaim_completed_reqs_force(void)
         int reclaim_free = 0;
         int reclaim_io = 0;
 
+        worker = &nvmev_vdev->io_workers[turn];
+
+        if (worker->working_signal) {
+            continue;
+        }
+
+        worker->working_signal = true;
+
         for (i = 0; i < NR_MAX_PARALLEL_IO; i++) {
 			w = &worker->work_queue[i];
             if (w->is_completed == true && w->is_copied == true &&
-                    w->nsecs_target <= worker->latest_nsecs &&
-                    atomic_read(&w->is_resubmit) == false) {
+                    w->nsecs_target <= worker->latest_nsecs) {
 
                 if (first_free_seq == -1) {
                     first_free_seq = i;
@@ -561,7 +557,6 @@ static void __reclaim_completed_reqs_force(void)
         worker->io_seq_end = prev_io_seq;
         smp_mb();
 
-        worker->force_signal = true;
         worker->working_signal = false;
         /*
         printk("WORKER %d: FREE %d (%d, %d), IO %d (%d, %d)\n", turn,
@@ -598,8 +593,7 @@ void __reclaim_completed_reqs(void)
 
 		while (curr != -1) {
 			w = &worker->work_queue[curr];
-            if (atomic_read(&w->is_resubmit) == false &&
-                w->is_completed == true && w->is_copied == true &&
+            if (w->is_completed == true && w->is_copied == true &&
 			    w->nsecs_target <= worker->latest_nsecs) {
 				last_entry = curr;
 				curr = w->next;
@@ -628,127 +622,6 @@ void __reclaim_completed_reqs(void)
 					first_entry, last_entry, nr_reclaimed);
 		}
 
-        worker->working_signal = false;
-	}
-}
-
-static void __reclaim_completed_reqs_more(void)
-{
-    unsigned int turn;
-
-    for (turn = 0; turn < nvmev_vdev->config.nr_io_workers; turn++) {
-        struct nvmev_io_worker *worker;
-		struct nvmev_io_work *w;
-
-		unsigned int first_entry = -1;
-		unsigned int last_entry = -1;
-		unsigned int curr;
-		int nr_reclaimed = 0;
-
-		worker = &nvmev_vdev->io_workers[turn];
-
-        if (worker->working_signal) {
-            continue;
-        }
-
-        worker->working_signal = true;
-
-		first_entry = worker->io_seq;
-		curr = first_entry;
-
-        while (curr != -1) {
-            w = &worker->work_queue[curr];
-			if (w->is_completed == true && w->is_copied == true &&
-			    w->nsecs_target <= worker->latest_nsecs && 
-                atomic_read(&w->is_resubmit) == false
-                ) {
-                first_entry = curr;
-                last_entry = curr;
-                break;
-            }
-            curr = w->next;
-        }
-
-        if (first_entry != -1) {
-            struct nvmev_io_work *prev_w, *curr_prev_w, *curr_next_w;
-            unsigned int prev;
-
-            prev = -1;
-            curr = first_entry;
-
-            while (curr != -1) {
-                w = &worker->work_queue[curr];
-                if (w->is_completed == true && w->is_copied == true &&
-                        w->nsecs_target <= worker->latest_nsecs && 
-                        atomic_read(&w->is_resubmit) == false
-                   ) {
-                    if (prev != -1) {
-                        prev_w = &worker->work_queue[prev];
-                    }
-                    if (w->prev != -1) {
-                        curr_prev_w = &worker->work_queue[w->prev];
-                    }
-                    if (w->next != -1) {
-                        curr_next_w = &worker->work_queue[w->next];
-                    }
-
-                    if (prev != -1) {
-                        prev_w->next = curr;
-                    }
-
-                    if (w->prev != -1) {
-                        curr_prev_w->next = w->next;
-                    }
-                    if (w->next != -1) {
-                        curr_next_w->prev = w->prev;
-                    }
-
-                    //printk("\t1] PREV %4d CURR %4d NEXT %4d", w->prev, curr, w->next);
-
-                    last_entry = curr;
-
-                    w->prev = prev;
-
-                }
-                nr_reclaimed++;
-                prev = curr;
-
-                curr = w->next;
-                continue;
-            } 
-
-            curr = w->next;
-        }
-
-        if (nr_reclaimed > 0) {
-            curr = first_entry;
-            while (curr != -1) {
-                w = &worker->work_queue[curr];
-                //printk("PREV %4d CURR %4d NEXT %4d", w->prev, curr, w->next);
-                curr = w->next;
-            }
-        }
-
-		if (last_entry != -1) {
-			w = &worker->work_queue[last_entry];
-			worker->io_seq = w->next;
-			if (w->next != -1) {
-				worker->work_queue[w->next].prev = -1;
-			}
-			w->next = -1;
-
-			w = &worker->work_queue[first_entry];
-			w->prev = worker->free_seq_end;
-
-			w = &worker->work_queue[worker->free_seq_end];
-			w->next = first_entry;
-
-			worker->free_seq_end = last_entry;
-			NVMEV_DEBUG_VERBOSE("%s: %u -- %u, %d\n", __func__,
-					first_entry, last_entry, nr_reclaimed);
-		}
-
-        worker->force_signal = true;
         worker->working_signal = false;
 	}
 }
@@ -1465,7 +1338,7 @@ int ebpf_search_int_page(struct bpf_xrp_kern *context,
             return ret;
         }
         if (cell_descent_size != EBPF_BLOCK_SIZE) {
-            printk("ebpf_search_int_page: descent size mismatch, expected %lld, got %lld", EBPF_BLOCK_SIZE, cell_descent_size);
+            printk("ebpf_search_int_page: descent size mismatch, expected %d, got %lld", EBPF_BLOCK_SIZE, cell_descent_size);
             return -EBPF_EINVAL;
         }
         p_offset += local_p_delta;
@@ -1617,8 +1490,8 @@ int resubmit_logic_single(int sqid, int sq_entry, struct nvmev_io_work *w)
     }
 
     cmd->slba = cpu_to_le64(nvme_sect_to_lba(on_meta->queuedata, (disk_offset >> 9) + on_meta->xrp_partition_start_sector));
-    atomic64_set(&on_meta->slba, cpu_to_le64(nvme_sect_to_lba(on_meta->queuedata, (disk_offset >> 9) + on_meta->xrp_partition_start_sector)));
-    w->slba = atomic64_read(&on_meta->slba);
+    on_meta->slba = cpu_to_le64(nvme_sect_to_lba(on_meta->queuedata, (disk_offset >> 9) + on_meta->xrp_partition_start_sector));
+    w->slba = on_meta->slba;
     /*
     if (w->on_meta == sq_entry(sq_entry).rw.rsvd2) {
         sq_entry(sq_entry).rw.slba = cmd->slba;
@@ -1626,6 +1499,10 @@ int resubmit_logic_single(int sqid, int sq_entry, struct nvmev_io_work *w)
     */
     return 0;
 }
+
+static volatile u64 subtask_result[NUM_R_CPU] = { 0, };
+static volatile u64 subtask_status[NUM_R_CPU] = { 0, };
+static volatile int done_status[NUM_R_CPU] = { 0, };
 
 int resubmit_logic(int sqid, int sq_entry, struct nvmev_io_work *w, int subtask)
 {
@@ -1673,19 +1550,19 @@ int resubmit_logic(int sqid, int sq_entry, struct nvmev_io_work *w, int subtask)
 
 
     if (ebpf_return != 0 || ebpf_return == EINVAL) {
-        atomic64_set(&on_meta->subtask_status[subtask], 2);
+        subtask_status[subtask] = 2;
         //printk("nvme_handle_cqe: ebpf failed, dump context\n");
         //printk("\tret %d, fail to search\n", subtask);
         return -1;
     }
 
     //printk("%1d - result %d, %d\n", subtask, ebpf_context.done, ebpf_context.next_addr[0]);
-    w->done_status[subtask] = ebpf_context.done & 0x7;
+    done_status[subtask] = ebpf_context.done & 0x7;
 
     ebpf_context.done >>= 4;
 
     if (ebpf_context.done) {
-        atomic64_set(&on_meta->subtask_status[subtask], 1);
+        subtask_status[subtask] = 1;
         //printk("ret %d, search done\n", subtask);
         return 1;
     }
@@ -1694,7 +1571,7 @@ int resubmit_logic(int sqid, int sq_entry, struct nvmev_io_work *w, int subtask)
     data_len = 512;
 
     //printk("\t%d: %16lx", subtask, file_offset);
-    atomic64_set(&on_meta->subtask_status[subtask], file_offset);
+    subtask_status[subtask] = file_offset;
     return 0;
 
     /*
@@ -1759,6 +1636,10 @@ static void nvmev_init_latency_emulation(struct nvmev_io_work *w, unsigned long 
 
 #define MOVING_LEN 128
 
+static atomic_t resubmit_waiting[NUM_R_CPU];
+static atomic_t target_rq[NUM_R_CPU];
+static atomic_t curr_rq[NUM_R_CPU];
+
 static int nvmev_resubmit_worker(void *data)
 {
 	struct nvmev_io_worker *my_worker = (struct nvmev_io_worker *)data;
@@ -1789,6 +1670,8 @@ static int nvmev_resubmit_worker(void *data)
         
     int existing_job_id = 0;
 
+    atomic_t *r_waiting;
+
     my_worker->total_ebpf_time = 0;
     my_worker->total_ebpf_num = 0;
     my_worker->ebpf_time = 500;
@@ -1799,6 +1682,8 @@ static int nvmev_resubmit_worker(void *data)
     id = smp_processor_id();
         
     existing_job_id = my_worker->id;
+
+    r_waiting = &resubmit_waiting[existing_job_id];
 
     while (!kthread_should_stop()) {
         int qidx;
@@ -1833,7 +1718,7 @@ static int nvmev_resubmit_worker(void *data)
         }
         */
 
-        r_count_goal = atomic_read(&my_worker->resubmit_waiting);
+        r_count_goal = atomic_read(r_waiting);
         if (r_count_goal == 0) {
             cond_resched();
         }
@@ -1902,7 +1787,7 @@ static int nvmev_resubmit_worker(void *data)
         }
         */
 
-        for (r_count = 0; r_count < r_count_goal; r_count++) {
+        if (r_count_goal > 0) {
             struct nvmev_io_work *w;
             int ret;
             u64 ebpf_time_end;
@@ -1921,15 +1806,16 @@ static int nvmev_resubmit_worker(void *data)
             int loc;
             struct resubmit_data *on_meta;
             u32 prev_pkru;
+
+            r_count = 0;
             
             loc = -1;
             idx = -1;
 
+            loc = atomic_read(&curr_rq[existing_job_id]);
 
-            loc = atomic_read(&my_worker->head);
-            atomic_set(&my_worker->head, (loc + 1) % RQ_LEN);
+            idx = atomic_read(&target_rq[existing_job_id]);
 
-            idx = atomic_read(&my_worker->target[loc]);
             worker = &nvmev_vdev->io_workers[idx];
             if (worker->id != my_worker->id) {
                 is_parallel = true;
@@ -1938,18 +1824,14 @@ static int nvmev_resubmit_worker(void *data)
                 is_parallel = false;
             }
 
-            curr = atomic64_read(&my_worker->curr[loc]);
-            w = &worker->work_queue[curr];
+            subtask_status[existing_job_id] = 0;
+            done_status[existing_job_id] = 0;
+
+            w = &worker->work_queue[loc];
             //w->on_meta = atomic64_read(&my_worker->on_meta[loc]);
 
             on_meta = w->on_meta;
 
-            smp_mb();
-
-            atomic64_set(&my_worker->curr[loc], (uint32_t)(-1));
-            atomic_set(&my_worker->target[loc], 5);
-
-            
             //printk("%1d JOB %d, %d\n", my_worker->id, curr, worker->id);
 
             if (on_meta->is_parallel && !is_parallel) {
@@ -1975,7 +1857,7 @@ static int nvmev_resubmit_worker(void *data)
             }
 
             // for parallel resubmission
-            atomic_set(&on_meta->subtask_result[existing_job_id], 1);
+            subtask_result[existing_job_id] = 1;
             //printk("%1d JOB %d, %d...done\n", my_worker->id, curr, worker->id);
 
             if (!is_parallel && on_meta->is_parallel) {
@@ -2002,7 +1884,7 @@ static int nvmev_resubmit_worker(void *data)
                 while (parallel_jobs != 4) {
                     parallel_jobs = 0;
                     for (job_num = 0; job_num < 4; job_num++) {
-                        parallel_jobs += atomic_read(&on_meta->subtask_result[job_num]);
+                        parallel_jobs += subtask_result[job_num];
                     }
                 }
 
@@ -2011,24 +1893,24 @@ static int nvmev_resubmit_worker(void *data)
                 // Check next offset or is_done
                 max_offset = 0;
                 for (job_num = 0; job_num < 4; job_num++) {
-                    if (atomic64_read(&on_meta->subtask_status[job_num]) == 1) {
+                    if (subtask_status[job_num] == 1) {
                         int j = 0;
                         int zero = 0, one = 0, two = 0, three = 0;
 
                         if (max_offset == 0) {
                             max_offset = 1;
                             for (j = 0; j < 4; j++) {
-                                if (w->done_status[j] == 0) {
+                                if (done_status[j] == 0) {
                                     zero++;
                                 }
-                                else if (w->done_status[j] == 1) {
+                                else if (done_status[j] == 1) {
                                     target_scratch = j;
                                     break;
                                 }
-                                else if (w->done_status[j] == 2) {
+                                else if (done_status[j] == 2) {
                                     two++;
                                 }
-                                else if (w->done_status[j] == 3) {
+                                else if (done_status[j] == 3) {
                                     three++;
                                 }
                                 //printk("[%d] DONE STTAUS %d", j, w->done_status[j]);
@@ -2039,7 +1921,7 @@ static int nvmev_resubmit_worker(void *data)
                             }
                             else if (one == 0 && two > 0 && three > 0) {
                                 for (j = 0; j < 4; j++) {
-                                    if (w->done_status[j] == 2) {
+                                    if (done_status[j] == 2) {
                                         target_scratch = j;
                                         break;
                                     }
@@ -2058,8 +1940,8 @@ static int nvmev_resubmit_worker(void *data)
                         break;
                     }
 
-                    if (max_offset < atomic64_read(&on_meta->subtask_status[job_num])) {
-                        max_offset = atomic64_read(&on_meta->subtask_status[job_num]);
+                    if (max_offset < subtask_status[job_num]) {
+                        max_offset = subtask_status[job_num];
                         target_scratch = job_num;
                     }
                 }
@@ -2106,8 +1988,8 @@ static int nvmev_resubmit_worker(void *data)
                     if (disk_offset != 0) {
                         uint64_t src_offset;
                         cmd->slba = cpu_to_le64(nvme_sect_to_lba(on_meta->queuedata, (disk_offset >> 9) + on_meta->xrp_partition_start_sector));
-                        atomic64_set(&on_meta->slba, cpu_to_le64(nvme_sect_to_lba(on_meta->queuedata, (disk_offset >> 9) + on_meta->xrp_partition_start_sector)));
-                        w->slba = atomic64_read(&on_meta->slba);
+                        on_meta->slba = cpu_to_le64(nvme_sect_to_lba(on_meta->queuedata, (disk_offset >> 9) + on_meta->xrp_partition_start_sector));
+                        w->slba = on_meta->slba;
 
                         // Set scratch page
 
@@ -2189,19 +2071,13 @@ static int nvmev_resubmit_worker(void *data)
 
                     ret = 1;
                 }
-                    
-                //worker->ebpf_time = ktime_get_ns() - ebpf_time;
             }
             else if (on_meta->is_parallel) {
                 // Done
-                atomic_dec(&my_worker->resubmit_waiting);
-                //atomic_set(&my_worker->split_job[tracking], my_worker->id);
-                break;
+                ret = -2;
             }
 
-            if (ret != 0) {
-                time_beg = ktime_get_ns();
-
+            if (ret != 0 && ret != -2) {
                 on_meta->status = 2;
                     
                 //printk("QOUT2 on_meta=%016lx, %d, %d", w->on_meta, worker->id, curr);
@@ -2214,33 +2090,21 @@ static int nvmev_resubmit_worker(void *data)
                 w->is_completed = true;
                 smp_mb();
 
-                atomic_set(&w->is_resubmit, 0);
-
-
-                time_end = ktime_get_ns();
+                w->nsecs_target = 0;
             }
-            else {
-                time_beg = ktime_get_ns();
-
+            else if (ret != -2) {
                 nvmev_init_latency_emulation(w, 0);
 
                 w->is_copied = false;
                 smp_mb();
 
-                atomic_set(&w->is_resubmit, 0);
-
                 //printk("QOUT3 on_meta=%016lx, %d, %d", w->on_meta, worker->id, curr);
-
-
-                time_end = ktime_get_ns();
             }
 
-            atomic_dec(&my_worker->resubmit_waiting);
-            break;
+            atomic_dec(r_waiting);
 
 #ifdef PROFILE
             printk("LOG %lu, %lu, %lu, %lu, %lu", ebpf_time, ebpf_time_end, etc, time_beg, time_end);
-                on_meta = atomic64_read(&my_worker->on_meta[loc]);
 #endif
 
             /*
@@ -2336,18 +2200,15 @@ static int nvmev_io_worker(void *data)
     u64 xrp_ebpf_time = 2500;
     //int counter = 0;
 
-	NVMEV_INFO("%s started on cpu %d (node %d)\n", worker->thread_name, smp_processor_id(),
-		   cpu_to_node(smp_processor_id()));
 
-    int ticks = 0;
     int in = 0, out = 0;
     int id = smp_processor_id();
     int waiting = 0, prev_waiting = 0;
 
     int i = 0;
-    int moving = 128;
-    int avg_time;
-    int avg_case;
+
+	NVMEV_INFO("%s started on cpu %d (node %d)\n", worker->thread_name, smp_processor_id(),
+		   cpu_to_node(smp_processor_id()));
 
 	while (!kthread_should_stop()) {
 		unsigned long long curr_nsecs_wall = __get_wallclock();
@@ -2368,18 +2229,12 @@ static int nvmev_io_worker(void *data)
             w = &worker->work_queue[curr];
 			worker->latest_nsecs = curr_nsecs;
 
-            if (worker->force_signal) {
-                worker->force_signal = false;
-                break;
-            }
-
-			if (atomic_read(&w->is_resubmit) == true || w->is_completed == true) {
+			if (w->is_completed == true) {
 				curr = w->next;
 				continue;
 			}
 
 
-            //printk("\tNODE %d %d%d", curr, w->is_copied, w->is_resubmit);
 			if (w->is_copied == false) {
 #ifdef PERF_DEBUG
 				w->nsecs_copy_start = local_clock() + delta;
@@ -2414,7 +2269,7 @@ static int nvmev_io_worker(void *data)
 			}
             
 			if (w->nsecs_target <= curr_nsecs) {
-                if (w->is_sode && atomic_read(&w->is_resubmit) == false) {
+                if (w->is_sode) {
                     int subtask_idx;
                     struct nvmev_io_worker *other_worker;
                     struct resubmit_data *on_meta;
@@ -2432,26 +2287,18 @@ static int nvmev_io_worker(void *data)
 #endif
                     if (w->on_meta->is_parallel == false) {
                         //struct Node *node = (struct Node *)w->on_meta->xrp_data_page;
-                        waiting = atomic_read(&worker->resubmit_waiting);
+                        waiting = atomic_read(&resubmit_waiting[worker->id]);
                         //if (waiting <= (RQ_LEN - 1) && waiting * worker->ebpf_time < (xrp_ebpf_time + 2000)) {
-                        if (waiting <= (RQ_LEN - 1)) {
+                        if (waiting == 0) {
                             int idx = 0;
                             int loc = -1;
 
-                            atomic_set(&w->is_resubmit, 1);
+                            w->nsecs_target = -1;
 
-                            loc = atomic_read(&worker->tail);
-                            atomic_set(&worker->tail, (loc + 1) % RQ_LEN);
+                            atomic_set(&target_rq[worker->id], worker->id);
+                            atomic_set(&curr_rq[worker->id], curr);
 
-                            // simple lock
-                            while (atomic_read(&worker->target[loc]) != 5) {
-                                // nothing
-                            }
-
-                            atomic_set(&worker->target[loc], worker->id);
-                            atomic64_set(&worker->curr[loc], curr);
-
-                            atomic_inc(&worker->resubmit_waiting);
+                            atomic_inc(&resubmit_waiting[worker->id]);
                                 
                             in += 1;
 
@@ -2466,40 +2313,31 @@ static int nvmev_io_worker(void *data)
                             waiting = 0;
                             for (subtask_idx = 0; subtask_idx < 4; subtask_idx++) {
                                 other_worker = &nvmev_vdev->io_workers[subtask_idx];
-                                waiting += atomic_read(&other_worker->resubmit_waiting);
+                                waiting += atomic_read(&resubmit_waiting[subtask_idx]);
                             }
 
                             //972
                             //printk("PAGES %d, %d", w->on_meta->xrp_bpf_prog->jited_len, w->on_meta->xrp_bpf_prog->len);
                             //scratch = (struct wt_ebpf_scratch *)(w->on_meta->xrp_scratch_page);
                             //if ((worker->ebpf_time < (xrp_ebpf_time + 2500)) && waiting == 0 && header->type != 7
-                            if ((waiting <= 4 * (RQ_LEN - 1)) && header->type != 7 && (header->u.entries / 2 <= 16)) {
+                            if (waiting == 0 && header->type != 7 && (header->u.entries / 2 <= 16)) {
                                 int i = 0;
                                 int idx = 0;
                                 int loc = -1;
 
-                                atomic_set(&w->is_resubmit, 1);
+                                w->nsecs_target = -1;
 
                                 //printk("EQ on_meta=%016lx, %d, %d", w->on_meta, worker->id, curr);
                                 for (subtask_idx = 0; subtask_idx < 4; subtask_idx++) {
                                     other_worker = &nvmev_vdev->io_workers[subtask_idx];
 
-                                    atomic_set(&w->on_meta->subtask_result[subtask_idx], 0);
+                                    subtask_result[subtask_idx] = 0;
                                 }
 
                                 // Main job
-                                loc = atomic_read(&worker->tail);
-                                atomic_set(&worker->tail, (loc + 1) % RQ_LEN);
-
-                                // simple lock
-                                while (atomic_read(&worker->target[loc]) != 5) {
-                                    // nothing
-                                }
-
-                                atomic_set(&worker->target[loc], worker->id);
-                                atomic64_set(&worker->curr[loc], curr);
-
-                                atomic_inc(&worker->resubmit_waiting);
+                                atomic_set(&target_rq[worker->id], worker->id);
+                                atomic_set(&curr_rq[worker->id], curr);
+                                atomic_inc(&resubmit_waiting[worker->id]);
 
                                 for (subtask_idx = 0; subtask_idx < 4; subtask_idx++) {
                                     idx = 0;
@@ -2507,18 +2345,10 @@ static int nvmev_io_worker(void *data)
 
                                     other_worker = &nvmev_vdev->io_workers[subtask_idx];
                                     if (worker->id != other_worker->id) {
-                                        loc = atomic_read(&other_worker->tail);
-                                        atomic_set(&other_worker->tail, (loc + 1) % RQ_LEN);
+                                        atomic_set(&target_rq[subtask_idx], worker->id);
+                                        atomic_set(&curr_rq[subtask_idx], curr);
 
-                                        // simple lock
-                                        while (atomic_read(&other_worker->target[loc]) != 5) {
-                                            // nothing
-                                        }
-
-                                        atomic_set(&other_worker->target[loc], worker->id);
-                                        atomic64_set(&other_worker->curr[loc], curr);
-
-                                        atomic_inc(&other_worker->resubmit_waiting);
+                                        atomic_inc(&resubmit_waiting[subtask_idx]);
                                     }
                                 }
 
@@ -2573,13 +2403,8 @@ static int nvmev_io_worker(void *data)
 					     w->nsecs_cq_filled - w->nsecs_start,
 					     w->nsecs_target - w->nsecs_start);
 #endif
-			    curr = w->next;
-
-
 				mb(); /* Reclaimer shall see after here */
 				w->is_completed = true;
-
-                continue;
 			}
 
 			curr = w->next;
@@ -2648,7 +2473,6 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
 	for (worker_id = 0; worker_id < nvmev_vdev->config.nr_io_workers; worker_id++) {
 		struct nvmev_io_worker *worker = &nvmev_vdev->io_workers[worker_id];
 
-        worker->force_signal = false;
         worker->working_signal = false;
 
 		worker->work_queue =
@@ -2660,7 +2484,6 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
             worker->work_queue[i].is_completed = true;
             worker->work_queue[i].is_copied = true;
             worker->work_queue[i].nsecs_target = 0;
-            atomic_set(&worker->work_queue[i].is_resubmit, 0);
 		}
 		worker->work_queue[NR_MAX_PARALLEL_IO - 1].next = -1;
 		worker->id = worker_id;
@@ -2679,14 +2502,10 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
         worker->r_seq_end = -1;
         worker->r_count_goal = 0;
 
-        atomic_set(&worker->resubmit_waiting, 0);
+        atomic_set(&resubmit_waiting[worker_id], 0);
 
-        for (i = 0; i < RQ_LEN; i++) {
-            atomic_set(&worker->target[i], 5);
-            atomic64_set(&worker->curr[i], 0);
-        }
-        atomic_set(&worker->head, 0);
-        atomic_set(&worker->tail, 0);
+        atomic_set(&target_rq[worker_id], 5);
+        atomic_set(&curr_rq[worker_id], 0);
 
 		snprintf(worker->thread_name, sizeof(worker->thread_name), "nvmev_io_worker_%d", worker_id);
 
@@ -2694,7 +2513,7 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
 		kthread_bind(worker->task_struct, nvmev_vdev->config.cpu_nr_io_workers[worker_id]);
 
         worker->resubmit_task = kthread_create(nvmev_resubmit_worker, worker, "%s", "resubmit_thread");
-        kthread_bind(worker->resubmit_task, NUM_CPU + worker_id);
+        kthread_bind(worker->resubmit_task, nvmev_vdev->config.cpu_nr_io_workers[worker_id] + nvmev_vdev->config.nr_io_workers);
 	}
 
 	for (worker_id = 0; worker_id < nvmev_vdev->config.nr_io_workers; worker_id++) {

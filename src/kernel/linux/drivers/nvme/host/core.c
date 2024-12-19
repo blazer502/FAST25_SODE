@@ -938,14 +938,10 @@ out:
 }
 
 
-static volatile bool fake_command_resubmit = false; 
-static struct task_struct *fake_cmd_worker = NULL;
-
 static int resubmit_req_cnt = 0;
 static u64 resubmit_time = 0;
 static u64 min_time = (u64)(-1);
 static u64 max_time = 0;
-spinlock_t nvme_global_lock;
 
 static volatile u64 *scratch_backup[48] = { NULL, };
 static volatile u64 *data_backup[48] = { NULL, };
@@ -958,7 +954,6 @@ struct resubmit_data *__alloc_resubmit_req(struct request *req, void *dev)
     int num_extents = xrp_count_tree(req->bio->xrp_inode);
     int size = sizeof(struct resubmit_data) + num_extents * sizeof(struct xrp_extent); 
 
-    u64 time_beg, time_end;
     //u64 alloc, scratch_log;
     void *base;
     int i;
@@ -972,8 +967,6 @@ struct resubmit_data *__alloc_resubmit_req(struct request *req, void *dev)
     bool is_parallel = false;
 
     struct bpf_prog *prog;
-
-    time_beg = ktime_get_ns();
 
     if (size % PAGE_SIZE > 0) {
         size = size / PAGE_SIZE * PAGE_SIZE + PAGE_SIZE;
@@ -1002,7 +995,6 @@ struct resubmit_data *__alloc_resubmit_req(struct request *req, void *dev)
         //base = alloc_pages_exact(size, GFP_KERNEL);
 
         if (is_parallel) {
-            //scratch_log = ktime_get_ns();
             if (scratch_backup[smp_processor_id()] != NULL) {
                 scratch = scratch_backup[smp_processor_id()];
                 scratch_backup[smp_processor_id()] = NULL;
@@ -1066,23 +1058,6 @@ struct resubmit_data *__alloc_resubmit_req(struct request *req, void *dev)
 
     new->xrp_command = req->xrp_command;
 
-    /*
-    if (fake_command_resubmit == false) {
-        spin_lock(&nvme_global_lock);
-        if (fake_command_resubmit == false) {
-            fake_command_resubmit = true;
-            mb();
-
-            // Create fake command resubmitter
-            fake_cmd_worker = kthread_create(fake_cmd_thread, dev, "fake cmd thread");
-            kthread_bind(fake_cmd_worker, 1);
-            wake_up_process(fake_cmd_worker);
-        }
-        spin_unlock(&nvme_global_lock);
-    }
-    */
-
-        
     //scratch = alloc_pages_exact(PAGE_SIZE * 4, GFP_KERNEL);
 
     if (is_parallel) {
@@ -1100,37 +1075,15 @@ struct resubmit_data *__alloc_resubmit_req(struct request *req, void *dev)
                 return NULL;
             }
 
-            atomic_set(&new->subtask_result[i], 0);
-            atomic64_set(&new->subtask_file_offset[i], 0);
             memcpy((void *)new->subtask_scratch[i], (void *)new->xrp_scratch_page, 1024);
         }
     }
 
-    atomic64_set(&new->slba, req->xrp_command->rw.slba);
+    new->slba = req->xrp_command->rw.slba;
     new->first_slba = req->xrp_command->rw.slba;
 
     new->previous_complete_counter = 0;
     new->xrp_ebpf_time = 0;
-
-    /*
-    time_end = ktime_get_ns();
-    resubmit_time += time_end - time_beg;
-    if (time_end - time_beg > max_time) {
-        max_time = time_end - time_beg;
-    }
-    if (time_end - time_beg < min_time) {
-        min_time = time_end - time_beg;
-    }
-    resubmit_req_cnt += 1;
-    if ((resubmit_req_cnt % 100000) == 0) {
-        printk("cnt: %d, ns: %u, %lu: ns, %lu: ns\n", resubmit_req_cnt, resubmit_time/resubmit_req_cnt, min_time, max_time);
-        resubmit_req_cnt = 0;
-        resubmit_time = 0;
-    }
-    */
-
-    //printk("LOG %lu, %lu, %lu, %lu", time_beg, alloc, scratch_log, time_end);
-
 
 	return new;
 }

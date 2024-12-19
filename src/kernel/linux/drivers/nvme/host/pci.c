@@ -1096,58 +1096,6 @@ bool xrp_check_tree(struct inode *inode, struct xrp_extent *copy, int num_extent
     return ret;
 }
 
-static struct resubmit_data *curr_fake_buff = NULL;
-
-
-int fake_cmd_thread(void *data)
-{
-    struct nvme_dev *dev = (struct nvme_dev *)data;
-
-    struct nvme_queue *nvmeq;
-    struct nvme_command fake_cmd;
-
-    struct resubmit_data *req = NULL;
-
-    msleep(5000);
-
-    nvmeq = &dev->queues[0];
-
-    memset(&fake_cmd, 0, sizeof(fake_cmd));
-    fake_cmd.common.opcode = nvme_cmd_sode;
-    fake_cmd.common.command_id = 7;
-
-    req = (struct resubmit_data *)alloc_pages_exact(PAGE_SIZE, GFP_KERNEL);
-    if (req == NULL) {
-        printk("fake cmd failed to allocate buffer");
-        return -1;
-    }
-
-    memset(req, 0, sizeof(struct resubmit_data));
-    req->status = 1;
-    req->cpu_arival = 0;
-    req->prev_cpu_arival = 0;
-
-    fake_cmd.rw.rsvd2 = (__u64)virt_to_phys(req) + ((u64)req & ~PAGE_MASK);
-
-    curr_fake_buff = req;
-    mb();
-
-    while (!kthread_should_stop()) {
-        req->cpu_arival = ktime_get_ns();
-        req->prev_cpu_arival = 0;
-        // Roundtrip
-        nvme_submit_cmd(nvmeq, &fake_cmd, true);
-        while (req->prev_cpu_arival == 0) { msleep(1); }
-        // Notify
-        nvme_submit_cmd(nvmeq, &fake_cmd, true);
-        msleep(100);
-    }
-
-    return 0;
-}
-
-//DEFINE_PER_CPU(int, per_cpu_done);
-
 static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 {
 	struct nvme_completion *cqe = &nvmeq->cqes[idx];
@@ -1169,16 +1117,6 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 
 	req = blk_mq_tag_to_rq(nvme_queue_tagset(nvmeq), command_id);
 	if (unlikely(!req)) {
-        if (command_id == 7) {
-            u64 prev_cpu_arival;
-            if (curr_fake_buff != NULL) {
-                prev_cpu_arival = curr_fake_buff->cpu_arival;
-                curr_fake_buff->cpu_arival = ktime_get_ns();
-                curr_fake_buff->prev_cpu_arival = prev_cpu_arival;
-            }
-            return;
-        }
-
 		dev_warn(nvmeq->dev->ctrl.device,
 			"invalid id %d completed on queue %d\n",
 			command_id, le16_to_cpu(cqe->sq_id));
@@ -1198,19 +1136,13 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		u32 ebpf_return;
 		loff_t file_offset, data_len;
 		u64 disk_offset;
-		ktime_t ebpf_start;
-		ktime_t resubmit_start = ktime_get();
 		struct xrp_mapping mapping;
-		ktime_t extent_lookup_start;
 		/* verify version number */
 		if (req->bio->xrp_count > 1
 		    && req->bio->xrp_inode->i_op == &ext4_file_inode_operations) {
 			file_offset = req->bio->xrp_file_offset;
 			data_len = 512;
-			extent_lookup_start = ktime_get();
 			xrp_retrieve_mapping(req->bio->xrp_inode, file_offset, data_len, &mapping);
-			atomic_long_add(ktime_sub(ktime_get(), extent_lookup_start), &xrp_extent_lookup_time);
-			atomic_long_inc(&xrp_extent_lookup_count);
 			if (!mapping.exist || mapping.len < data_len || mapping.address & 0x1ff) {
 				printk("nvme_handle_cqe: failed to retrieve address mapping during verification with logical address 0x%llx, dump context\n", file_offset);
 				ebpf_dump_page((uint8_t *) ebpf_context.scratch, 4096);
@@ -1229,7 +1161,6 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		memset(&ebpf_context, 0, sizeof(struct bpf_xrp_kern));
 		ebpf_context.data = page_address(bio_page(req->bio));
 		ebpf_context.scratch = page_address(req->bio->xrp_scratch_page);
-		ebpf_start = ktime_get();
 		ebpf_prog = req->bio->xrp_bpf_prog;
 		ebpf_return = BPF_PROG_RUN(ebpf_prog, &ebpf_context);
 		if (ebpf_return == EINVAL) {
@@ -1237,8 +1168,6 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		} else if (ebpf_return != 0) {
 			printk("nvme_handle_cqe: ebpf search unknown error %d\n", ebpf_return);
 		}
-		atomic_long_add(ktime_sub(ktime_get(), ebpf_start), &xrp_ebpf_time);
-		atomic_long_inc(&xrp_ebpf_count);
 		if (ebpf_return != 0) {
 			/* error happens when calling ebpf function. end the request and return */
 			printk("nvme_handle_cqe: ebpf failed, dump context\n");
@@ -1249,10 +1178,6 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		}
 		if (ebpf_context.done) {
 			/* finish traversal */
-			atomic_long_add(ktime_sub(ktime_get(), resubmit_start), &xrp_resubmit_leaf_time);
-			atomic_long_inc(&xrp_resubmit_leaf_count);
-			atomic_long_add(req->bio->xrp_count, &xrp_resubmit_level_nr);
-			atomic_long_inc(&xrp_resubmit_level_count);
 			if (!nvme_try_complete_req(req, cqe->status, cqe->result))
 				nvme_pci_complete_rq(req);
 			return;
@@ -1263,10 +1188,7 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		// FIXME: support variable data_len and more than one next_addr
 		req->bio->xrp_file_offset = file_offset;
 		if (req->bio->xrp_inode->i_op == &ext4_file_inode_operations) {
-			extent_lookup_start = ktime_get();
 			xrp_retrieve_mapping(req->bio->xrp_inode, file_offset, data_len, &mapping);
-			atomic_long_add(ktime_sub(ktime_get(), extent_lookup_start), &xrp_extent_lookup_time);
-			atomic_long_inc(&xrp_extent_lookup_count);
 			if (!mapping.exist || mapping.len < data_len || mapping.address & 0x1ff) {
 				printk("nvme_handle_cqe: failed to retrieve address mapping with logical address 0x%llx, dump context\n", file_offset);
 				ebpf_dump_page((uint8_t *) ebpf_context.scratch, 4096);
@@ -1286,8 +1208,6 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		req->bio->bi_iter.bi_sector = (disk_offset >> 9) + req->bio->xrp_partition_start_sector;
 		req->__sector = req->bio->bi_iter.bi_sector;
 		req->xrp_command->rw.slba = cpu_to_le64(nvme_sect_to_lba(req->q->queuedata, blk_rq_pos(req)));
-		atomic_long_add(ktime_sub(ktime_get(), resubmit_start), &xrp_resubmit_int_time);
-		atomic_long_inc(&xrp_resubmit_int_count);
 		nvme_submit_cmd(nvmeq, req->xrp_command, true);
 	} else {
 		/* ebpf enabled */
@@ -1296,11 +1216,8 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		u32 ebpf_return;
 		loff_t file_offset, data_len;
 		u64 disk_offset;
-		ktime_t ebpf_start;
-		ktime_t resubmit_start = ktime_get();
 
 		struct xrp_mapping mapping;
-		ktime_t extent_lookup_start;
 
         phys_addr_t phys = req->xrp_command->rw.rsvd2;
 		struct resubmit_data *data = req->on_meta;
@@ -1357,7 +1274,6 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
         ebpf_context.data = page_address(bio_page(req->bio));
 		ebpf_context.scratch = page_address(req->bio->xrp_scratch_page);
 		ebpf_prog = req->bio->xrp_bpf_prog;
-        ebpf_start = ktime_get_ns();
         ebpf_return = BPF_PROG_RUN(ebpf_prog, &ebpf_context);
 
 		if (ebpf_return == EINVAL) {
@@ -1422,8 +1338,6 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		data_len = 512;
 		// FIXME: support variable data_len and more than one next_addr
 		if (req->bio->xrp_inode->i_op == &ext4_file_inode_operations) {
-			extent_lookup_start = ktime_get();
-
 			//xrp_retrieve_mapping(req->bio->xrp_inode, file_offset, data_len, &mapping);
             driver_retrieve_mapping(data->extents, data->num_extents, file_offset, data_len, &mapping);
 			if (!mapping.exist || mapping.len < data_len || mapping.address & 0x1ff) {
@@ -1449,7 +1363,7 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
 		req->bio->bi_iter.bi_sector = (disk_offset >> 9) + req->bio->xrp_partition_start_sector;
 		req->__sector = req->bio->bi_iter.bi_sector;
 		req->xrp_command->rw.slba = cpu_to_le64(nvme_sect_to_lba(req->q->queuedata, blk_rq_pos(req)));
-        atomic64_set(&data->slba, cpu_to_le64(nvme_sect_to_lba(req->q->queuedata, blk_rq_pos(req))));
+        data->slba = cpu_to_le64(nvme_sect_to_lba(req->q->queuedata, blk_rq_pos(req)));
 
         if (data->is_parallel) {
             // Copy
@@ -1461,7 +1375,6 @@ static inline void nvme_handle_cqe(struct nvme_queue *nvmeq, u16 idx)
                 target->nr_page = scratch->nr_page;
             }
         }
-        data->xrp_ebpf_time = ktime_get_ns() - ebpf_start;
 
 
 		nvme_submit_cmd(nvmeq, req->xrp_command, true);

@@ -10,6 +10,7 @@
 #include "nvme.h"
 
 //#define PROFILE
+#define NUM_R_CPU 4
 
 #define CONFIG_NVMEV_IO_WORKER_BY_SQ
 #undef CONFIG_NVMEV_FAST_X86_IRQ_HANDLING
@@ -42,9 +43,6 @@
 #define NVMEV_DEBUG_VERBOSE(string, args...)
 #endif
 
-#define NUM_CPU 17
-#define RQ_LEN 1
-//#define SINGLE_MODE
 
 #define NR_MAX_IO_QUEUE 72
 #define NR_MAX_PARALLEL_IO 16384
@@ -166,7 +164,7 @@ struct resubmit_data {
 	char *xrp_data_page;
 	char *xrp_scratch_page;
 
-    atomic64_t slba;
+    u64 slba;
 
 	int status;
     //char padding1[4];
@@ -195,8 +193,6 @@ struct resubmit_data {
     int previous_complete_counter;
     u64 xrp_ebpf_time;
 
-    atomic64_t subtask_status[4];
-    atomic_t subtask_result[4];
     u64 *subtask_scratch[4];
 
     u64 is_parallel;
@@ -228,11 +224,9 @@ struct nvmev_io_work {
 	unsigned long long nsecs_copy_done;
 	unsigned long long nsecs_cq_filled;
 
-	volatile bool is_copied;
-	volatile bool is_completed;
+	bool is_copied;
+	bool is_completed;
     bool is_sode;
-
-    atomic_t is_resubmit;
 
 	unsigned int status;
 	unsigned int result0;
@@ -244,8 +238,7 @@ struct nvmev_io_work {
 	size_t buffs_to_release;
 
     //phys_addr_t on_meta;
-    volatile struct resubmit_data *on_meta;
-    volatile int done_status[4];
+    struct resubmit_data *on_meta;
 
     u64 slba;
 
@@ -255,7 +248,6 @@ struct nvmev_io_work {
 struct nvmev_io_worker {
 	struct nvmev_io_work *work_queue;
 
-    volatile bool force_signal;
     volatile bool working_signal;
 
 	unsigned int free_seq; /* free io req head index */
@@ -277,17 +269,13 @@ struct nvmev_io_worker {
     u64 total_ebpf_time;
     u64 total_ebpf_num;
 
-    atomic_t resubmit_waiting;
-
     spinlock_t lock;
 
+#ifdef PROFILE
     struct profile *profiler;
+#endif
 
 	char thread_name[32];
-
-    atomic_t head, tail;
-    atomic_t target[RQ_LEN];
-    atomic64_t curr[RQ_LEN];
 };
 
 
