@@ -598,7 +598,8 @@ void __reclaim_completed_reqs(void)
 
 		while (curr != -1) {
 			w = &worker->work_queue[curr];
-            if (w->is_completed == true && w->is_copied == true &&
+            if (atomic_read(&w->is_resubmit) == false &&
+                w->is_completed == true && w->is_copied == true &&
 			    w->nsecs_target <= worker->latest_nsecs) {
 				last_entry = curr;
 				curr = w->next;
