@@ -17,7 +17,7 @@ SODE requires three hardware components:
     **Your system must have two nodes at least because one is used for applications, and the other is used for computational storage emulation**. Currently, SODE is tested on two-node systems (Node 1 for applications and Node 2 for computational storage emulation).
 2. Emulating wimpy on-device cores\
     Some cores used by on-device computations need CPU frequency scaling to emulate 
-    whimpy on-device cores. **You must select 9 cores (5 for storage emulation + 4 for on-device computations) at least for evaluations of SODE, and change [disable_cpu_freq_scaling.sh](utils/disable_cpu_freq_scaling.sh) script to fix the frequency of 4 cores for on-device computations**. Currently, CPU 17, 18, 19, and 20 are used for on-device computations. Other CPU 12, 13, 14, 15, and 16 are used for storage emulations. **In other words, your system must have a CPU node for emulation with 9 cores**. For a detailed explanation, see [SODE paper, 4.2 Emulating Wimpy On-device Cores](etc/fast25-sode.pdf).
+    whimpy on-device cores. First, **you must select 9 cores (5 for storage emulation + 4 for on-device computations) at least for evaluations of SODE, and change [disable_cpu_freq_scaling.sh](utils/disable_cpu_freq_scaling.sh) script to fix the frequency of 4 cores for on-device computations**. Currently, CPU 17, 18, 19, and 20 are used for on-device computations. Other CPU 12, 13, 14, 15, and 16 are used for storage emulations. Second, **you must specify and set [NUM\_R\_CPU](src/emulator/nvmev.h) value also**. In other words, your system must have a CPU node for emulation with 9 cores. For a detailed explanation, see [SODE paper, 4.2 Emulating Wimpy On-device Cores](etc/fast25-sode.pdf).
 3. Large memory bound to the node for computational storage emulation\
     At least, we recommend 192GB of memory bound to the node for computational storage emulation because the YCSB benchmark requires large disk space.
 4. Other requirements\
@@ -137,8 +137,8 @@ cd benchmark/
 Lastly, you can check the functionality of SODE on BPF-KV and WiredTiger:
 ```
 cd eval/test/
-./test_bpfkv.sh
-./test_wiredtiger.sh
+./test_bpfkv.sh /dev/nvme0n1
+./test_wiredtiger.sh /dev/nvme0n1
 ```
 
 #### Run All Benchmarks

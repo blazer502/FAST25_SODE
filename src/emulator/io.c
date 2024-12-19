@@ -2093,11 +2093,13 @@ static int nvmev_resubmit_worker(void *data)
                 w->nsecs_target = 0;
             }
             else if (ret != -2) {
-                nvmev_init_latency_emulation(w, 0);
-
-                w->is_copied = false;
+                w->is_completed = true;
                 smp_mb();
 
+                nvmev_init_latency_emulation(w, 0);
+                w->is_copied = false;
+
+                w->is_completed = false;
                 //printk("QOUT3 on_meta=%016lx, %d, %d", w->on_meta, worker->id, curr);
             }
 
