@@ -125,8 +125,6 @@ static unsigned int __do_perform_io(int sqid, int sq_entry, struct nvmev_io_work
 	u64 paddr;
 	u64 *paddr_list = NULL;
 	size_t nsid = cmd->nsid - 1; // 0-based
-    //struct resubmit_data *data = (struct resubmit_data *)(sq_entry(sq_entry).rw.rsvd2);
-    phys_addr_t phys_data = w->on_meta;
 
     if (w->is_hrp) {
         offset = w->slba << 9;
@@ -407,7 +405,6 @@ static int __enqueue_io_req(int sqid, int cqid, int sq_entry, unsigned long long
         w->slba = atomic64_read(&w->on_meta->slba);
         w->is_hrp = true;
 
-        log_empty(worker->profiler, entry);
     }
     else {
         w->on_meta = 0;
@@ -428,10 +425,8 @@ static int __enqueue_io_req(int sqid, int cqid, int sq_entry, unsigned long long
 
     atomic_set(&w->is_resubmit, 0);
 
-    w->is_reclaim = false;
 	w->prev = -1;
 	w->next = -1;
-    w->r_next = -1;
 	w->is_internal = false;
     w->paddr_cache = 0;
 	smp_mb(); /* IO worker shall see the updated w at once */
@@ -465,7 +460,6 @@ void schedule_internal_operation(int sqid, unsigned long long nsecs_target,
 	w->is_copied = true;
 	w->prev = -1;
 	w->next = -1;
-    w->r_next = -1;
 
 	w->is_internal = true;
 	w->write_buffer = write_buffer;
@@ -528,7 +522,6 @@ static void __reclaim_completed_reqs_force(void)
 
                 w->next = -1;
 
-                w->r_next = -1;
                 prev_free_seq = i;
 
                 reclaim_free++;
@@ -555,7 +548,6 @@ static void __reclaim_completed_reqs_force(void)
 
                 w->next = -1;
 
-                w->r_next = -1;
                 prev_io_seq = i;
 
                 reclaim_io++;
@@ -580,7 +572,7 @@ static void __reclaim_completed_reqs_force(void)
     }
 }
 
-static void __reclaim_completed_reqs(void)
+void __reclaim_completed_reqs(void)
 {
 	unsigned int turn;
 
@@ -606,10 +598,8 @@ static void __reclaim_completed_reqs(void)
 
 		while (curr != -1) {
 			w = &worker->work_queue[curr];
-			if (w->is_completed == true && w->is_copied == true &&
-			    w->nsecs_target <= worker->latest_nsecs &&
-                atomic_read(&w->is_resubmit) == false
-                ) {
+            if (w->is_completed == true && w->is_copied == true &&
+			    w->nsecs_target <= worker->latest_nsecs) {
 				last_entry = curr;
 				curr = w->next;
 				nr_reclaimed++;
@@ -763,8 +753,7 @@ static void __reclaim_completed_reqs_more(void)
 }
 
 
-static size_t __nvmev_proc_io(int sqid, int sq_entry, size_t *io_size, 
-        bool is_reclaim)
+static size_t __nvmev_proc_io(int sqid, int sq_entry, size_t *io_size)
 {
 	struct nvmev_submission_queue *sq = nvmev_vdev->sqes[sqid];
 	unsigned long long nsecs_start = __get_wallclock();
@@ -809,10 +798,7 @@ static size_t __nvmev_proc_io(int sqid, int sq_entry, size_t *io_size,
 #endif
 
 
-	if (__enqueue_io_req(sqid, sq->cqid, sq_entry, nsecs_start, &ret) < 0) {
-        if (is_reclaim) {
-	        __reclaim_completed_reqs();
-        }
+    if (__enqueue_io_req(sqid, sq->cqid, sq_entry, nsecs_start, &ret) < 0) {
         return false;
     }
 
@@ -857,7 +843,7 @@ int nvmev_proc_io_sq(int sqid, int new_db, int old_db)
 
 	for (seq = 0; seq < num_proc; seq++) {
 		size_t io_size;
-		if (!__nvmev_proc_io(sqid, sq_entry, &io_size, true))
+		if (!__nvmev_proc_io(sqid, sq_entry, &io_size))
 			break;
 
 		if (++sq_entry == sq->queue_size) {
@@ -2207,7 +2193,6 @@ static int nvmev_resubmit_worker(void *data)
             }
             else if (on_meta->is_parallel) {
                 // Done
-                //curr = w->r_next;
                 atomic_dec(&my_worker->resubmit_waiting);
                 //atomic_set(&my_worker->split_job[tracking], my_worker->id);
                 break;
@@ -2215,8 +2200,6 @@ static int nvmev_resubmit_worker(void *data)
 
             if (ret != 0) {
                 time_beg = ktime_get_ns();
-
-                log_print(worker->profiler, curr);
 
                 on_meta->status = 2;
                     
@@ -2232,8 +2215,6 @@ static int nvmev_resubmit_worker(void *data)
 
                 atomic_set(&w->is_resubmit, 0);
 
-                //curr = w->r_next;
-                //w->r_next = -1;
 
                 time_end = ktime_get_ns();
             }
@@ -2247,11 +2228,8 @@ static int nvmev_resubmit_worker(void *data)
 
                 atomic_set(&w->is_resubmit, 0);
 
-                log_empty(worker->profiler, curr);
                 //printk("QOUT3 on_meta=%016lx, %d, %d", w->on_meta, worker->id, curr);
 
-                //curr = w->r_next;
-                //w->r_next = -1;
 
                 time_end = ktime_get_ns();
             }
@@ -2378,7 +2356,7 @@ static int nvmev_io_worker(void *data)
 		volatile unsigned int curr = worker->io_seq;
         struct nvmev_io_work *w;
 		int qidx;
-
+    
         //printk("HEAD %d", curr);
         while (curr != -1) {
 			unsigned long long curr_nsecs;
@@ -2394,30 +2372,11 @@ static int nvmev_io_worker(void *data)
                 break;
             }
 
-            /*
-            if (w->is_reclaim) {
-                if (w->is_completed) {
-                    //__fill_cq_result(w);
-                    //w->is_reclaim = false;
-                    //w->is_resubmit = false;
-                }
-                else if (w->is_copied == false) {
-                    //nvmev_init_latency_emulation(w, 0);
-                    //w->is_reclaim = false;
-                    //w->is_resubmit = false;
-                }
-
-                w->is_reclaim = false;
-                w->is_resubmit = false;
-            }
-            */
-
 			if (atomic_read(&w->is_resubmit) == true || w->is_completed == true) {
 				curr = w->next;
 				continue;
 			}
 
-            log_start(worker->profiler, curr);
 
             //printk("\tNODE %d %d%d", curr, w->is_copied, w->is_resubmit);
 			if (w->is_copied == false) {
@@ -2453,13 +2412,8 @@ static int nvmev_io_worker(void *data)
 					    w->sqid, w->cqid, w->sq_entry);
 			}
             
-            log_io(worker->profiler, curr);
-
-            curr_nsecs = local_clock() + delta;
 			if (w->nsecs_target <= curr_nsecs) {
-                log_latemul(worker->profiler, curr);
-
-                if (w->is_hrp && w->on_meta && w->is_copied == true && atomic_read(&w->is_resubmit) == false && w->is_completed == false) {
+                if (w->is_hrp && atomic_read(&w->is_resubmit) == false) {
                     int subtask_idx;
                     struct nvmev_io_worker *other_worker;
                     struct resubmit_data *on_meta;
@@ -2568,7 +2522,6 @@ static int nvmev_io_worker(void *data)
                                 }
 
                                 in += 1;
-                                log_sec1(worker->profiler, curr);
 
                                 spin_unlock(&global_worker_lock);
 
@@ -2589,13 +2542,10 @@ static int nvmev_io_worker(void *data)
 
                     __fill_cq_result(w);
 
-                    w->is_completed = true;
                     mb();
+                    w->is_completed = true;
 
                     out += 1;
-
-                    log_sec1(worker->profiler, curr);
-                    log_print(worker->profiler, curr);
 
                     curr = w->next;
                     continue;
@@ -2705,7 +2655,6 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
 		for (i = 0; i < NR_MAX_PARALLEL_IO; i++) {
 			worker->work_queue[i].next = i + 1;
 			worker->work_queue[i].prev = i - 1;
-            worker->work_queue[i].r_next = -1;
 
             worker->work_queue[i].is_completed = true;
             worker->work_queue[i].is_copied = true;
@@ -2746,9 +2695,6 @@ void NVMEV_IO_WORKER_INIT(struct nvmev_dev *nvmev_vdev)
         worker->resubmit_task = kthread_create(nvmev_resubmit_worker, worker, "%s", "resubmit_thread");
         kthread_bind(worker->resubmit_task, NUM_CPU + worker_id);
 	}
-
-    printk("%d STATuS", sizeof(struct xrp_extent));
-    printk("%d NVME CMD", sizeof(struct nvme_command));
 
 	for (worker_id = 0; worker_id < nvmev_vdev->config.nr_io_workers; worker_id++) {
 		struct nvmev_io_worker *worker = &nvmev_vdev->io_workers[worker_id];

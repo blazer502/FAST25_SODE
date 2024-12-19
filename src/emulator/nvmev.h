@@ -220,8 +220,6 @@ struct nvmev_io_work {
 	int sq_entry;
 	unsigned int command_id;
 
-    volatile unsigned int r_next;
-
 	unsigned long long nsecs_start;
 	unsigned long long nsecs_target;
 
@@ -232,7 +230,6 @@ struct nvmev_io_work {
 
 	volatile bool is_copied;
 	volatile bool is_completed;
-    volatile bool is_reclaim;
     bool is_hrp;
 
     atomic_t is_resubmit;
